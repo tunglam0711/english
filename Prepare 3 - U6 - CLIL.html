@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prepare 3 - Secondary School in the UK</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        /* Slide Transition Styles */
+        .slide {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        .slide.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Drag and Drop Styles */
+        .draggable {
+            cursor: move;
+            transition: all 0.2s;
+        }
+        .draggable.dragging {
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+
+        .drop-zone {
+            transition: all 0.2s;
+        }
+        .drop-zone.drag-over {
+            background-color: #dbeafe; /* blue-100 */
+            border-color: #3b82f6; /* blue-500 */
+            transform: scale(1.02);
+        }
+        .drop-zone.correct {
+            background-color: #dcfce7; /* green-100 */
+            border-color: #22c55e; /* green-500 */
+        }
+        .drop-zone.incorrect {
+            background-color: #fee2e2; /* red-100 */
+            border-color: #ef4444; /* red-500 */
+        }
+
+        /* Custom Scrollbar */
+        .custom-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- Main Container -->
+    <div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden min-h-[600px] flex flex-col relative">
+        
+        <!-- Header -->
+        <header class="bg-blue-900 text-white p-6 flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold"><i class="fas fa-graduation-cap mr-2"></i> Prepare 3</h1>
+                <p class="text-blue-200 text-sm">Secondary School in the UK</p>
+            </div>
+            <div class="text-sm bg-blue-800 px-3 py-1 rounded-full">
+                Slide <span id="page-indicator">1</span>/5
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <main class="flex-grow p-6 overflow-y-auto relative custom-scroll">
+            
+            <!-- SLIDE 1: Background Information -->
+            <div id="slide-1" class="slide active h-full">
+                <div class="flex flex-col md:flex-row gap-8 items-center h-full">
+                    <div class="md:w-1/2 space-y-4">
+                        <h2 class="text-3xl font-bold text-blue-900 mb-4 border-b-4 border-red-500 inline-block">The System</h2>
+                        <div class="prose text-slate-600 leading-relaxed text-justify">
+                            <p class="mb-3">
+                                The education system in England and Wales is strictly structured into stages: 
+                                <strong>pre-school</strong> (3–4), <strong>primary</strong> (4–11), <strong>secondary</strong> (11–16), <strong>sixth form</strong> (16–18), and <strong>tertiary</strong> (18+).
+                            </p>
+                            <p class="mb-3">
+                                Over <strong>90%</strong> of pupils attend state schools. These are free and follow a national curriculum that standardises subjects, syllabuses, and assessments across the country.
+                            </p>
+                            <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-600">
+                                <i class="fas fa-info-circle text-blue-600 mb-1"></i>
+                                <p class="text-sm italic">
+                                    <strong>Confusing Fact:</strong> Old and prestigious independent schools (like Eton) are called <span class="text-red-600 font-bold">"public schools"</span>, even though they are private, fee-paying, and not in the state system.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="md:w-1/2 w-full h-64 md:h-96 relative rounded-xl overflow-hidden shadow-lg group">
+                        <img src="https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+                             alt="UK University Building" 
+                             class="w-full h-full object-cover transform group-hover:scale-110 transition duration-700">
+                        <div class="absolute bottom-0 left-0 bg-gradient-to-t from-black/70 to-transparent w-full p-4 text-white">
+                            <p class="font-semibold">Traditional British Architecture</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SLIDE 2: Drag and Drop Game -->
+            <div id="slide-2" class="slide h-full">
+                <div class="text-center mb-6">
+                    <h2 class="text-2xl font-bold text-blue-900">Vocabulary Match</h2>
+                    <p class="text-slate-500">Drag the term on the left to its correct definition on the right.</p>
+                </div>
+
+                <div class="flex flex-col md:flex-row gap-6 h-full pb-16">
+                    <!-- Draggable Terms -->
+                    <div class="md:w-1/3 bg-slate-50 p-4 rounded-xl shadow-inner border border-slate-200">
+                        <h3 class="font-bold text-slate-400 mb-4 text-sm uppercase tracking-wider text-center">Terms</h3>
+                        <div id="terms-container" class="flex flex-col gap-3">
+                            <!-- Terms injected by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Drop Zones (Definitions) -->
+                    <div class="md:w-2/3 bg-slate-50 p-4 rounded-xl shadow-inner border border-slate-200">
+                        <h3 class="font-bold text-slate-400 mb-4 text-sm uppercase tracking-wider text-center">Definitions</h3>
+                        <div id="definitions-container" class="grid grid-cols-1 gap-3">
+                            <!-- Drop zones injected by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Game Controls -->
+                <div class="absolute bottom-0 left-0 w-full p-4 bg-white/90 backdrop-blur border-t flex justify-between items-center z-10">
+                    <button onclick="resetGame()" class="text-slate-500 hover:text-blue-600 text-sm font-semibold px-4 py-2">
+                        <i class="fas fa-undo mr-1"></i> Reset
+                    </button>
+                    <div id="score-display" class="font-bold text-xl text-blue-900 hidden">
+                        Score: <span id="score-value">0</span>/6
+                    </div>
+                    <button onclick="checkAnswers()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-bold shadow-md transition transform hover:-translate-y-1">
+                        Submit Answers
+                    </button>
+                </div>
+            </div>
+
+            <!-- SLIDE 3: Types of School -->
+            <div id="slide-3" class="slide h-full">
+                <h2 class="text-3xl font-bold text-blue-900 mb-2 text-center">Types of School</h2>
+                <p class="text-center text-slate-500 mb-8 max-w-2xl mx-auto">Understanding the different educational environments in the UK system.</p>
+                
+                <div class="grid grid-cols-1 gap-6 max-w-3xl mx-auto">
+                    
+                    <!-- Card: Comprehensive School -->
+                    <div class="bg-white border-l-8 border-red-500 p-6 rounded-lg shadow-md flex items-start gap-4">
+                        <div class="bg-red-100 p-3 rounded-full text-red-600 shrink-0">
+                            <i class="fas fa-users fa-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-xl text-slate-800">Comprehensive School</h3>
+                            <p class="text-slate-600 mt-2">A state school that accepts pupils of all abilities. It is the most common type of secondary school in the UK, providing education for the vast majority of students without entrance exams.</p>
+                        </div>
+                    </div>
+
+                    <!-- Card: Grammar School -->
+                    <div class="bg-white border-l-8 border-purple-500 p-6 rounded-lg shadow-md flex items-start gap-4">
+                        <div class="bg-purple-100 p-3 rounded-full text-purple-600 shrink-0">
+                            <i class="fas fa-brain fa-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-xl text-slate-800">Grammar School</h3>
+                            <p class="text-slate-600 mt-2">A selective state school where students must pass an exam (the <strong>11-plus</strong>) to get in. These schools focus on academic achievement and are less common than comprehensive schools.</p>
+                        </div>
+                    </div>
+
+                    <!-- Card: Sixth Form -->
+                    <div class="bg-white border-l-8 border-yellow-500 p-6 rounded-lg shadow-md flex items-start gap-4">
+                        <div class="bg-yellow-100 p-3 rounded-full text-yellow-600 shrink-0">
+                            <i class="fas fa-user-graduate fa-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-xl text-slate-800">Sixth Form</h3>
+                            <p class="text-slate-600 mt-2">The final two years of secondary education (ages 16–18). This stage can take place within a secondary school or at a separate "Sixth Form College," and is dedicated to preparing students for A-levels and university.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SLIDE 4: GCSE -->
+            <div id="slide-4" class="slide h-full">
+                <div class="flex flex-col items-center justify-center h-full text-center max-w-2xl mx-auto">
+                    <div class="mb-6">
+                        <i class="fas fa-file-alt text-8xl text-blue-200"></i>
+                    </div>
+                    <h2 class="text-4xl font-bold text-blue-900 mb-6">GCSE</h2>
+                    <div class="bg-blue-50 p-8 rounded-2xl border-2 border-blue-200 shadow-sm">
+                        <h3 class="text-xl font-semibold text-blue-800 mb-2">General Certificate of Secondary Education</h3>
+                        <p class="text-lg text-slate-700 leading-relaxed">
+                            These are the standard exams taken by almost all students in England, Wales, and Northern Ireland at the age of <strong>16</strong>. 
+                        </p>
+                        <p class="text-slate-600 mt-4 text-sm">
+                            Students typically take GCSEs in a range of subjects including Maths, English, and Science. Grades are important for entry into Sixth Form or employment.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SLIDE 5: AS Level and A Level -->
+            <div id="slide-5" class="slide h-full">
+                <h2 class="text-3xl font-bold text-blue-900 mb-8 text-center">Advanced Levels</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 h-3/4 items-center">
+                    
+                    <!-- AS Level -->
+                    <div class="bg-white h-full p-6 rounded-2xl shadow-lg border-t-4 border-green-500 flex flex-col justify-center text-center relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition">
+                            <i class="fas fa-step-forward text-9xl text-green-500"></i>
+                        </div>
+                        <div class="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600 text-2xl">
+                            <i class="fas fa-step-forward"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-slate-800 mb-2">AS Level</h3>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-4">Advanced Subsidiary Level</p>
+                        <p class="text-slate-600">
+                            Exams typically taken after the <strong>first year</strong> of Sixth Form (Year 12). They are worth 40% of a full A-level (under some specifications) or act as a standalone qualification.
+                        </p>
+                    </div>
+
+                    <!-- A Level -->
+                    <div class="bg-white h-full p-6 rounded-2xl shadow-lg border-t-4 border-indigo-500 flex flex-col justify-center text-center relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition">
+                            <i class="fas fa-award text-9xl text-indigo-500"></i>
+                        </div>
+                        <div class="bg-indigo-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-600 text-2xl">
+                            <i class="fas fa-award"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-slate-800 mb-2">A Level</h3>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-4">Advanced Level</p>
+                        <p class="text-slate-600">
+                            The final exams taken at age <strong>18</strong> (Year 13). These are the main qualifications used by universities to assess suitability for higher education courses.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Footer Navigation -->
+        <footer class="bg-gray-100 p-4 border-t flex justify-between items-center">
+            <button id="prev-btn" onclick="changeSlide(-1)" class="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold text-slate-500 bg-white border border-slate-300 hover:bg-slate-50 hover:text-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fas fa-arrow-left"></i> Previous
+            </button>
+            
+            <div class="flex gap-2">
+                <span class="w-2 h-2 rounded-full bg-blue-600 transition-all duration-300" id="dot-1"></span>
+                <span class="w-2 h-2 rounded-full bg-slate-300 transition-all duration-300" id="dot-2"></span>
+                <span class="w-2 h-2 rounded-full bg-slate-300 transition-all duration-300" id="dot-3"></span>
+                <span class="w-2 h-2 rounded-full bg-slate-300 transition-all duration-300" id="dot-4"></span>
+                <span class="w-2 h-2 rounded-full bg-slate-300 transition-all duration-300" id="dot-5"></span>
+            </div>
+
+            <button id="next-btn" onclick="changeSlide(1)" class="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed">
+                Next <i class="fas fa-arrow-right"></i>
+            </button>
+        </footer>
+
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed top-4 right-4 bg-white p-4 rounded-lg shadow-xl transform translate-x-full transition-transform duration-300 border-l-4 z-50 flex items-center gap-3">
+        <div id="toast-icon"></div>
+        <div>
+            <h4 id="toast-title" class="font-bold text-sm"></h4>
+            <p id="toast-msg" class="text-xs text-slate-500"></p>
+        </div>
+    </div>
+
+    <script>
+        // --- State Management ---
+        let currentSlideIndex = 1;
+        const totalSlides = 5; // Updated to 5
+
+        // --- Data for Game ---
+        const gameData = [
+            { id: 'gcse', term: 'GCSE', def: 'Exams taken by students at age 16.' },
+            { id: 'comprehensive', term: 'Comprehensive School', def: 'A state school for students of all abilities.' },
+            { id: 'grammar', term: 'Grammar School', def: 'A selective state school based on academic ability.' },
+            { id: 'sixth', term: 'Sixth Form', def: 'Education for ages 16-18.' },
+            { id: 'as', term: 'AS Level', def: 'Exams taken after the first year of sixth form.' },
+            { id: 'alevel', term: 'A Level', def: 'Final exams at 18, used for university entry.' }
+        ];
+
+        // --- Navigation Functions ---
+        function changeSlide(direction) {
+            const nextIndex = currentSlideIndex + direction;
+            if (nextIndex >= 1 && nextIndex <= totalSlides) {
+                // Hide current
+                document.getElementById(`slide-${currentSlideIndex}`).classList.remove('active');
+                
+                // Update dots
+                document.getElementById(`dot-${currentSlideIndex}`).classList.replace('bg-blue-600', 'bg-slate-300');
+                
+                // Set new index
+                currentSlideIndex = nextIndex;
+                
+                // Show new
+                document.getElementById(`slide-${currentSlideIndex}`).classList.add('active');
+                document.getElementById(`dot-${currentSlideIndex}`).classList.replace('bg-slate-300', 'bg-blue-600');
+                document.getElementById('page-indicator').innerText = currentSlideIndex;
+
+                updateButtons();
+            }
+        }
+
+        function updateButtons() {
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+
+            prevBtn.disabled = currentSlideIndex === 1;
+            nextBtn.disabled = currentSlideIndex === totalSlides;
+
+            // Visual feedback for disabled state
+            if(currentSlideIndex === 1) prevBtn.classList.add('opacity-50');
+            else prevBtn.classList.remove('opacity-50');
+
+            if(currentSlideIndex === totalSlides) nextBtn.classList.add('opacity-50');
+            else nextBtn.classList.remove('opacity-50');
+        }
+
+        // --- Game Logic ---
+        
+        let draggedItem = null;
+
+        function initGame() {
+            const termsContainer = document.getElementById('terms-container');
+            const defsContainer = document.getElementById('definitions-container');
+            
+            termsContainer.innerHTML = '';
+            defsContainer.innerHTML = '';
+
+            // Shuffle terms for display
+            const shuffledTerms = [...gameData].sort(() => Math.random() - 0.5);
+            const shuffledDefs = [...gameData].sort(() => Math.random() - 0.5);
+
+            // Render Draggable Terms
+            shuffledTerms.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'draggable bg-white p-3 rounded shadow-sm border border-blue-100 hover:shadow-md text-blue-900 font-semibold text-center select-none';
+                el.draggable = true;
+                el.dataset.id = item.id;
+                el.innerText = item.term;
+                el.id = `term-${item.id}`;
+
+                // Drag Events
+                el.addEventListener('dragstart', dragStart);
+                el.addEventListener('dragend', dragEnd);
+                
+                // Touch Events for Mobile
+                el.addEventListener('touchstart', touchStart, {passive: false});
+                el.addEventListener('touchmove', touchMove, {passive: false});
+                el.addEventListener('touchend', touchEnd);
+
+                termsContainer.appendChild(el);
+            });
+
+            // Render Drop Zones (Definitions)
+            shuffledDefs.forEach(item => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex items-stretch';
+
+                const zone = document.createElement('div');
+                zone.className = 'drop-zone flex-grow bg-white p-3 rounded-l border border-r-0 border-slate-200 text-sm text-slate-600 flex items-center justify-between';
+                zone.dataset.matchId = item.id;
+                zone.innerHTML = `<span>${item.def}</span>`;
+                
+                // Placeholder for dropped item
+                const slot = document.createElement('div');
+                slot.className = 'slot w-32 bg-slate-100 border-2 border-dashed border-slate-300 rounded ml-2 flex items-center justify-center text-xs text-slate-400 font-bold min-h-[40px]';
+                slot.innerText = "Drop here";
+                slot.dataset.matchId = item.id;
+
+                // Drag Events on the slot
+                slot.addEventListener('dragover', dragOver);
+                slot.addEventListener('dragenter', dragEnter);
+                slot.addEventListener('dragleave', dragLeave);
+                slot.addEventListener('drop', drop);
+
+                zone.appendChild(slot);
+                wrapper.appendChild(zone);
+                defsContainer.appendChild(wrapper);
+            });
+        }
+
+        // --- Drag & Drop Handlers ---
+
+        function dragStart(e) {
+            draggedItem = this;
+            setTimeout(() => this.classList.add('dragging'), 0);
+        }
+
+        function dragEnd() {
+            this.classList.remove('dragging');
+            draggedItem = null;
+        }
+
+        function dragOver(e) {
+            e.preventDefault(); // Essential to allow dropping
+        }
+
+        function dragEnter(e) {
+            e.preventDefault();
+            this.classList.add('bg-blue-100', 'border-blue-400');
+        }
+
+        function dragLeave() {
+            this.classList.remove('bg-blue-100', 'border-blue-400');
+        }
+
+        function drop(e) {
+            e.preventDefault();
+            this.classList.remove('bg-blue-100', 'border-blue-400');
+            
+            if (draggedItem) {
+                // If this slot already has an item, move the old one back to list
+                if (this.children.length > 0 && this.children[0].classList.contains('draggable')) {
+                     const oldItem = this.children[0];
+                     document.getElementById('terms-container').appendChild(oldItem);
+                }
+
+                this.innerText = ''; // Remove "Drop here" text
+                this.appendChild(draggedItem);
+                
+                // Add remove listener to click to remove
+                draggedItem.onclick = function() {
+                    document.getElementById('terms-container').appendChild(this);
+                };
+            }
+        }
+
+        // --- Mobile Touch Logic (Simulating Drag and Drop) ---
+        let touchClone = null;
+        let touchOffsetX = 0;
+        let touchOffsetY = 0;
+
+        function touchStart(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const original = e.target;
+            
+            draggedItem = original;
+            
+            // Create a clone to follow finger
+            touchClone = original.cloneNode(true);
+            touchClone.style.position = 'fixed';
+            touchClone.style.zIndex = '1000';
+            touchClone.style.opacity = '0.8';
+            touchClone.style.width = original.offsetWidth + 'px';
+            touchClone.classList.add('shadow-xl', 'bg-blue-100');
+            
+            document.body.appendChild(touchClone);
+            
+            const rect = original.getBoundingClientRect();
+            touchOffsetX = touch.clientX - rect.left;
+            touchOffsetY = touch.clientY - rect.top;
+            
+            moveClone(touch.clientX, touch.clientY);
+        }
+
+        function touchMove(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            moveClone(touch.clientX, touch.clientY);
+        }
+
+        function touchEnd(e) {
+            e.preventDefault();
+            const touch = e.changedTouches[0];
+            
+            // Hide clone momentarily to see what's underneath
+            touchClone.style.display = 'none';
+            const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            touchClone.style.display = 'block';
+
+            // Find if we dropped on a valid slot
+            const slot = elemBelow ? elemBelow.closest('.slot') : null;
+
+            if (slot) {
+                // Logic identical to Drop function
+                if (slot.children.length > 0 && slot.children[0].classList.contains('draggable')) {
+                     const oldItem = slot.children[0];
+                     document.getElementById('terms-container').appendChild(oldItem);
+                }
+                slot.innerText = '';
+                slot.appendChild(draggedItem);
+            }
+
+            // Cleanup
+            if(touchClone) touchClone.remove();
+            touchClone = null;
+            draggedItem = null;
+        }
+
+        function moveClone(x, y) {
+            if(touchClone) {
+                touchClone.style.left = (x - touchOffsetX) + 'px';
+                touchClone.style.top = (y - touchOffsetY) + 'px';
+            }
+        }
+
+        // --- Game Validation ---
+
+        function checkAnswers() {
+            let correctCount = 0;
+            const slots = document.querySelectorAll('.slot');
+            
+            slots.forEach(slot => {
+                const targetId = slot.dataset.matchId;
+                const item = slot.querySelector('.draggable');
+                const parentZone = slot.parentElement; // The .drop-zone
+                
+                // Reset styles
+                parentZone.classList.remove('correct', 'incorrect');
+                
+                if (item) {
+                    if (item.dataset.id === targetId) {
+                        correctCount++;
+                        parentZone.classList.add('correct');
+                        item.classList.add('bg-green-100', 'text-green-800', 'border-green-300');
+                        item.classList.remove('bg-white');
+                    } else {
+                        parentZone.classList.add('incorrect');
+                        item.classList.add('bg-red-100', 'text-red-800', 'border-red-300');
+                        item.classList.remove('bg-white');
+                    }
+                }
+            });
+
+            // Update Score
+            const scoreDisplay = document.getElementById('score-display');
+            const scoreValue = document.getElementById('score-value');
+            scoreDisplay.classList.remove('hidden');
+            scoreValue.innerText = correctCount;
+
+            // Toast Notification
+            if (correctCount === 6) {
+                showToast('Success!', 'Perfect score! You know the system well.', 'success');
+            } else {
+                showToast('Keep Trying', `You got ${correctCount}/6 correct. Check the red boxes.`, 'warning');
+            }
+        }
+
+        function resetGame() {
+            initGame();
+            document.getElementById('score-display').classList.add('hidden');
+        }
+
+        // --- Toast Logic ---
+        function showToast(title, msg, type) {
+            const toast = document.getElementById('toast');
+            const toastTitle = document.getElementById('toast-title');
+            const toastMsg = document.getElementById('toast-msg');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastTitle.innerText = title;
+            toastMsg.innerText = msg;
+            
+            if(type === 'success') {
+                toast.className = "fixed top-4 right-4 bg-white p-4 rounded-lg shadow-xl transform transition-transform duration-300 border-l-4 border-green-500 z-50 flex items-center gap-3";
+                toastIcon.innerHTML = '<i class="fas fa-check-circle text-green-500 text-2xl"></i>';
+            } else {
+                toast.className = "fixed top-4 right-4 bg-white p-4 rounded-lg shadow-xl transform transition-transform duration-300 border-l-4 border-orange-500 z-50 flex items-center gap-3";
+                toastIcon.innerHTML = '<i class="fas fa-exclamation-circle text-orange-500 text-2xl"></i>';
+            }
+
+            toast.classList.remove('translate-x-full');
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+            }, 3000);
+        }
+
+        // --- Initialization ---
+        window.onload = function() {
+            updateButtons();
+            initGame();
+        };
+
+    </script>
+</body>
+</html>
