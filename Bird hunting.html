@@ -460,30 +460,58 @@ Henry</textarea>
 
         function detectGunGesture(lm) {
             const wrist = lm[0];
-            const dIndex = dist(wrist, lm[8]);
-            const dMiddle = dist(wrist, lm[12]);
-            const dRing = dist(wrist, lm[16]);
-            const dPinky = dist(wrist, lm[20]);
+            
+            // Tips
+            const thumbTip = lm[4];
+            const indexTip = lm[8];
+            const middleTip = lm[12];
+            const ringTip = lm[16];
+            const pinkyTip = lm[20];
 
-            // Index Extended, others roughly curled
-            const isIndexExtended = dIndex > dist(wrist, lm[6]) * 1.1;
-            const isMiddleCurled = dMiddle < dIndex * 0.85;
-            const isRingCurled = dRing < dIndex * 0.85;
-            const isPinkyCurled = dPinky < dIndex * 0.85;
+            // Knuckles (MCP) for reference
+            const indexMCP = lm[5];
+            const middleMCP = lm[9]; // Palm center reference
 
-            if (isIndexExtended && isMiddleCurled && isRingCurled && isPinkyCurled) {
+            const d = (p1, p2) => Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+
+            // Reference for Hand Size
+            const handSize = d(wrist, middleMCP);
+
+            // --- STRICT "PISTOL" LOGIC ---
+
+            // 1. Index Finger: EXTENDED
+            // The tip must be far from the wrist, significantly more than the knuckle.
+            const dIndexTip = d(wrist, indexTip);
+            const isIndexExtended = dIndexTip > d(wrist, indexMCP) * 1.2;
+
+            // 2. Middle, Ring, Pinky: CURLED
+            // These tips must be significantly closer to the wrist than the Index Tip.
+            // This ensures they are tucked in (loose fist).
+            const dMiddleTip = d(wrist, middleTip);
+            const dRingTip = d(wrist, ringTip);
+            const dPinkyTip = d(wrist, pinkyTip);
+
+            const areOthersCurled = 
+                dMiddleTip < dIndexTip * 0.8 && 
+                dRingTip < dIndexTip * 0.8 && 
+                dPinkyTip < dIndexTip * 0.8;
+
+            // 3. Thumb: RAISED (The Hammer)
+            // The thumb tip should be far away from the Index Knuckle (creating the 'L' shape gap).
+            // If the thumb is tucked (fist), this distance is small.
+            const dThumbToIndexMCP = d(thumbTip, indexMCP);
+            const isThumbRaised = dThumbToIndexMCP > handSize * 0.5;
+
+            // COMBINE ALL
+            if (isIndexExtended && areOthersCurled && isThumbRaised) {
                 state.isGunDetected = true;
-                state.hand = { x: lm[8].x, y: lm[8].y }; 
+                state.hand = { x: indexTip.x, y: indexTip.y }; 
                 updateGunUI(true);
             } else {
                 state.isGunDetected = false;
                 state.hand = null;
                 updateGunUI(false);
             }
-        }
-
-        function dist(p1, p2) {
-            return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
         }
 
         function updateGunUI(isGun) {
