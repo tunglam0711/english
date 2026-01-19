@@ -99,7 +99,7 @@
         
         <div class="w-full max-w-md bg-slate-800 p-6 rounded-2xl shadow-2xl border border-slate-700">
             <label class="block text-sm font-bold text-cyan-300 mb-2">PARTICIPANTS (One per line)</label>
-            <textarea id="name-input" class="w-full h-48 bg-slate-900 text-white p-4 rounded-xl border border-slate-600 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 outline-none resize-none font-mono" placeholder="Abby&#10;Bill&#10;Cindy">Abby
+            <textarea id="name-input" class="w-full h-32 bg-slate-900 text-white p-4 rounded-xl border border-slate-600 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 outline-none resize-none font-mono mb-4" placeholder="Abby&#10;Bill&#10;Cindy">Abby
 Bill
 Cindy
 Dave
@@ -108,7 +108,28 @@ Frank
 Grace
 Henry</textarea>
             
-            <div class="mt-6 flex gap-4">
+            <!-- Game Mode Selection -->
+            <div class="mb-6 bg-slate-700/50 p-3 rounded-xl border border-slate-600">
+                <label class="block text-xs font-bold text-cyan-300 mb-2 uppercase tracking-wider">Game Mode</label>
+                <div class="flex flex-col gap-2">
+                    <label class="flex items-center gap-3 text-white cursor-pointer hover:bg-slate-700 p-2 rounded-lg transition-colors">
+                        <input type="radio" name="mode" value="remove" checked class="accent-cyan-400 w-5 h-5">
+                        <div class="flex flex-col">
+                            <span class="font-bold text-sm">Elimination</span>
+                            <span class="text-xs text-slate-400">Remove bird after hit</span>
+                        </div>
+                    </label>
+                    <label class="flex items-center gap-3 text-white cursor-pointer hover:bg-slate-700 p-2 rounded-lg transition-colors">
+                        <input type="radio" name="mode" value="keep" class="accent-cyan-400 w-5 h-5">
+                        <div class="flex flex-col">
+                            <span class="font-bold text-sm">Endless</span>
+                            <span class="text-xs text-slate-400">Keep bird flying after hit</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
                 <button onclick="startGame()" class="flex-1 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-300 hover:to-orange-400 text-black font-black text-xl py-4 rounded-xl transition-all transform hover:scale-105 shadow-[0_0_20px_rgba(251,191,36,0.5)]">
                     LAUNCH GAME 🚀
                 </button>
@@ -215,10 +236,11 @@ Henry</textarea>
         const state = {
             birds: [],
             isGameActive: false,
-            isRoundActive: true, // NEW: Controls the turn-based logic
+            isRoundActive: true, 
+            mode: 'remove', // 'remove' or 'keep'
             lastShotTime: 0,
-            hand: null, // {x, y}
-            currentAim: null, // {x, y}
+            hand: null, 
+            currentAim: null, 
             isGunDetected: false,
             audioContext: null,
             analyser: null,
@@ -316,6 +338,10 @@ Henry</textarea>
             
             const names = raw.split('\n').map(n => n.trim()).filter(n => n);
             if (names.length === 0) return alert("Please enter valid names!");
+
+            // Get Game Mode
+            const modeRadios = document.getElementsByName('mode');
+            state.mode = Array.from(modeRadios).find(r => r.checked).value;
 
             // Initialize Systems
             if (!state.audioContext) try { initAudio(); } catch (e) { console.error(e); }
@@ -605,8 +631,13 @@ Henry</textarea>
             if (!state.isGameActive) return; // Safety check if stopped during firing
 
             const bird = state.birds[index];
-            state.birds.splice(index, 1);
-            updateBirdCount();
+            
+            // Mode Logic
+            if (state.mode === 'remove') {
+                state.birds.splice(index, 1);
+                updateBirdCount();
+            }
+            // If mode is 'keep', we do nothing to the array
 
             // End Round (Disable shooting)
             state.isRoundActive = false;
