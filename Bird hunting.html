@@ -215,6 +215,7 @@ Henry</textarea>
         const state = {
             birds: [],
             isGameActive: false,
+            isRoundActive: true, // NEW: Controls the turn-based logic
             lastShotTime: 0,
             hand: null, // {x, y}
             currentAim: null, // {x, y}
@@ -332,12 +333,14 @@ Henry</textarea>
             els.game.classList.remove('hidden');
             
             state.isGameActive = true;
+            state.isRoundActive = true; // Start fresh round
             updateBirdCount();
             gameLoop();
         }
 
         function stopGame() {
             state.isGameActive = false;
+            state.isRoundActive = false;
             
             // Switch UI
             els.game.classList.add('hidden');
@@ -408,7 +411,8 @@ Henry</textarea>
 
         function triggerShotIfReady() {
             const now = Date.now();
-            if (state.isGunDetected && state.currentAim && now - state.lastShotTime > DEBOUNCE_TIME && state.birds.length > 0) {
+            // Check if Round is Active
+            if (state.isRoundActive && state.isGunDetected && state.currentAim && now - state.lastShotTime > DEBOUNCE_TIME && state.birds.length > 0) {
                 els.volBar.style.width = '100%';
                 els.volBar.className = "h-full bg-red-500 w-full transition-all duration-75";
                 fireShot(state.currentAim.x, state.currentAim.y);
@@ -542,8 +546,8 @@ Henry</textarea>
                 bird.draw(ctx);
             });
 
-            // Draw Crosshair
-            if (state.isGunDetected && state.hand) {
+            // Draw Crosshair (Only if Round is Active)
+            if (state.isRoundActive && state.isGunDetected && state.hand) {
                 const aimX = (1 - state.hand.x) * w; 
                 const aimY = state.hand.y * h;
                 
@@ -598,9 +602,14 @@ Henry</textarea>
         }
 
         function handleHit(index) {
+            if (!state.isGameActive) return; // Safety check if stopped during firing
+
             const bird = state.birds[index];
             state.birds.splice(index, 1);
             updateBirdCount();
+
+            // End Round (Disable shooting)
+            state.isRoundActive = false;
 
             confetti({
                 particleCount: 150,
@@ -615,6 +624,7 @@ Henry</textarea>
 
         function closeModal() {
             els.winnerModal.classList.add('hidden');
+            state.isRoundActive = true; // Start next round
         }
 
         // --- 11. SOUND FX ---
