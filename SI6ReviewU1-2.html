@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Share it 6 - Review App</title>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --secondary: #50e3c2;
+            --accent: #f5a623;
+            --bg: #f0f4f8;
+            --text: #333;
+            --white: #ffffff;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --t1: #ff5e5e;
+            --t2: #ffa502;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 15px;
+            overflow-x: hidden;
+        }
+
+        .card {
+            background: var(--white);
+            width: 100%;
+            max-width: 700px;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+            position: relative;
+        }
+
+        h1 { color: var(--primary); margin-bottom: 20px; font-size: 1.8rem; }
+        
+        .tab-nav { display: flex; justify-content: center; gap: 10px; margin-bottom: 25px; }
+        .tab-btn { 
+            background: #e1e8ed; color: #555; padding: 12px 24px; border-radius: 12px; 
+            cursor: pointer; border: none; font-weight: bold; transition: 0.3s;
+        }
+        .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(74, 144, 226, 0.3); }
+
+        .hidden { display: none !important; }
+
+        /* Box Grid */
+        .box-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .box {
+            aspect-ratio: 1/1;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 4px 0 #2a6bb8;
+        }
+        .box:hover { transform: translateY(-3px); box-shadow: 0 7px 0 #2a6bb8; }
+        .box.opened { background: #ccc !important; box-shadow: none !important; cursor: default; opacity: 0.5; }
+
+        /* Scoreboard */
+        .scoreboard {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border: 2px solid #eee;
+        }
+        .team-score { font-size: 1.2rem; font-weight: bold; padding: 5px 10px; border-radius: 8px; }
+        .team-score.active { background: rgba(245, 166, 35, 0.15); border-bottom: 3px solid var(--accent); }
+        .t1 { color: var(--t1); }
+        .t2 { color: var(--t2); }
+
+        /* Point Line Game */
+        .point-game-container {
+            margin: 40px 0;
+            padding: 20px;
+            background: #eee;
+            border-radius: 15px;
+            position: relative;
+        }
+        .point-line {
+            height: 55px;
+            width: 100%;
+            display: flex;
+            border-radius: 28px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .segment { height: 100%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 0.9rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); }
+        .seg-red { background: var(--danger); }
+        .seg-orange { background: var(--accent); }
+        .seg-blue { background: var(--primary); }
+        .seg-green { background: var(--success); }
+
+        .arrow {
+            position: absolute;
+            top: -28px;
+            left: 0;
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 28px solid #111;
+            transform: translateX(-50%);
+            z-index: 30;
+            transition: none;
+        }
+        
+        .hit-line {
+            position: absolute;
+            top: 0;
+            width: 4px;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            z-index: 25;
+            transform: translateX(-50%);
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        /* Buttons */
+        button {
+            padding: 15px 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            background: var(--primary);
+            color: white;
+            transition: 0.2s;
+        }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        button.check { background: var(--success); }
+        button.cross { background: var(--danger); }
+        button.hit { background: #111; width: 100%; margin-top: 20px; font-size: 1.6rem; letter-spacing: 3px; font-weight: 800; }
+        button.back { background: #95a5a6; }
+
+        .question-text {
+            font-size: 1.35rem;
+            line-height: 1.6;
+            margin: 20px 0;
+            padding: 25px;
+            background: #fffdf5;
+            border-radius: 15px;
+            border: 2px dashed var(--accent);
+            color: #333;
+        }
+        .answer-key {
+            font-size: 1.2rem;
+            color: #2c3e50;
+            font-weight: bold;
+            margin-top: 10px;
+            padding: 18px;
+            background: #e8f4fd;
+            border-radius: 12px;
+            border-left: 6px solid var(--primary);
+            text-align: left;
+        }
+
+        .message { height: 24px; margin: 10px 0; font-weight: bold; font-size: 1.2rem; }
+        .correct { color: var(--success); }
+        .wrong { color: var(--danger); }
+
+        .nav-line { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 25px; border-top: 1px solid #eee; padding-top: 15px; }
+        .nav-dot { width: 34px; height: 34px; border-radius: 50%; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; cursor: pointer; transition: 0.2s; border: 2px solid transparent; }
+        .nav-dot.active { border-color: var(--primary); background: #fff; color: var(--primary); font-weight: bold; }
+        .nav-dot.completed { background: var(--success); color: white; border-color: var(--success); }
+
+        .word-display { font-size: 2.2rem; font-family: 'Courier New', Courier, monospace; letter-spacing: 4px; margin: 20px 0; color: var(--primary); font-weight: bold; text-transform: uppercase; }
+        .choice-grid { display: flex; flex-direction: column; gap: 10px; margin: 20px 0; }
+        .choice-btn { background: #fff; border: 2px solid #ddd; padding: 14px; border-radius: 12px; text-align: left; cursor: pointer; font-size: 1.05rem; transition: 0.2s; }
+        .choice-btn:hover { border-color: var(--primary); background: #f0f7ff; }
+        .choice-btn.correct-ans { background: var(--success) !important; color: white !important; border-color: var(--success); font-weight: bold; }
+        .choice-btn.wrong-ans { background: var(--danger) !important; color: white !important; border-color: var(--danger); }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="tab-nav">
+        <button id="tab-vocab" class="tab-btn active" onclick="switchBranch('vocab')">Vocabulary</button>
+        <button id="tab-grammar" class="tab-btn" onclick="switchBranch('grammar')">Grammar Game</button>
+    </div>
+
+    <div id="screen-main">
+        <h1 id="branch-title">Vocabulary Review</h1>
+        <p>Choose a unit to start practicing!</p>
+        <div class="menu-grid">
+            <button onclick="showLessons(1)">Unit 1</button>
+            <button onclick="showLessons(2)">Unit 2</button>
+        </div>
+    </div>
+
+    <div id="screen-lessons" class="hidden">
+        <h1 id="unit-title">Unit --</h1>
+        <div class="menu-grid" id="lesson-buttons"></div>
+        <button onclick="showMainMenu()" style="background:#eee; color:#555; margin-top:20px;">← Back</button>
+    </div>
+
+    <div id="screen-boxes" class="hidden">
+        <div class="scoreboard">
+            <div id="score-t1" class="team-score t1">Team 1: 0</div>
+            <div id="score-t2" class="team-score t2">Team 2: 0</div>
+        </div>
+        <p id="turn-display" style="font-weight: bold; font-size: 1.1rem;">Team 1's Turn</p>
+        <div class="box-grid" id="box-container"></div>
+        <button onclick="showMainMenu()" style="background:#eee; color:#555; margin-top:20px;">Quit Game</button>
+    </div>
+
+    <div id="screen-question" class="hidden">
+        <h2 id="q-number-label" style="color: var(--primary); margin: 0; font-size: 1.2rem;">Question #--</h2>
+        <div class="question-text" id="q-text"></div>
+        
+        <div id="q-initial-btns" style="display: flex; gap: 15px; justify-content: center;">
+            <button class="back" onclick="returnToGrid()">Return to Boxes</button>
+            <button id="btn-show-ans" onclick="showAnswer()">Show Answer Key</button>
+        </div>
+
+        <div id="ans-container" class="hidden">
+            <div class="answer-key" id="q-ans"></div>
+            <p style="margin-top:25px; font-weight:bold; color: #555;">Did the student answer correctly?</p>
+            <div style="display:flex; gap:15px; justify-content: center;">
+                <button class="check" onclick="handleResult(true)">✓ Correct</button>
+                <button class="cross" onclick="handleResult(false)">✗ Wrong</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-points" class="hidden">
+        <h2 id="point-title" style="color: var(--primary);">Team 1: Hit for Points!</h2>
+        <div class="point-game-container">
+            <div class="point-line" id="point-line"></div>
+            <div id="hit-line-mark" class="hit-line hidden"></div>
+            <div class="arrow" id="arrow"></div>
+        </div>
+        <button class="hit" id="btn-hit" onclick="stopArrow()">HIT!</button>
+        <p id="point-feedback" style="font-weight: bold; margin-top: 20px; font-size: 1.6rem; min-height: 1.5em;"></p>
+    </div>
+
+    <div id="screen-review" class="hidden">
+        <div class="game-header">
+            <span id="review-title" style="font-weight: bold; color: var(--primary);">Vocab</span>
+            <span id="review-score-display">1 / 8</span>
+        </div>
+        <div class="hint-box" id="review-hint"></div>
+        <div id="review-word-display" class="word-display"></div>
+        
+        <div id="review-input-area">
+            <input type="text" id="review-input" placeholder="Type answer here..." autocomplete="off">
+            <button onclick="checkReviewAnswer()">Check</button>
+        </div>
+        <div id="review-choice-area" class="choice-grid hidden"></div>
+        
+        <div id="review-message" class="message"></div>
+        <button id="review-next" class="hidden accent" style="width:100%" onclick="nextReviewWord()">Next →</button>
+        
+        <div class="nav-line" id="review-nav"></div>
+        <button onclick="showMainMenu()" style="background:#eee; color:#555; margin-top:20px;">Exit</button>
+    </div>
+</div>
+
+<script>
+    // --- SOUND ENGINE ---
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function playSound(type) {
+        if (!audioCtx) audioCtx = new AudioCtx();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        const now = audioCtx.currentTime;
+
+        if (type === 'success') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(440, now);
+            osc.frequency.exponentialRampToValueAtTime(880, now + 0.2);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            osc.start(); osc.stop(now + 0.3);
+        } else if (type === 'fail') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, now);
+            osc.frequency.linearRampToValueAtTime(50, now + 0.2);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+            osc.start(); osc.stop(now + 0.3);
+        } else if (type === 'hit') {
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(600, now);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+            osc.start(); osc.stop(now + 0.2);
+        }
+    }
+
+    // --- DATA ---
+    const grammarQuestions = [
+        { q: "Correct the mistakes (3 errors): 'He has wavy brown short hair and he is the man that is good at play the piano.'", a: "He has short wavy brown hair and he is the man who is good at playing the piano." },
+        { q: "Unscramble the sentence: hair / has / and / beautiful / she / straight / long / black / looks / sister / like / her / .", a: "She has beautiful long straight black hair and looks like her sister." },
+        { q: "Combine these 2 sentences using who: 'The woman is my new art teacher. She is wearing the gray jacket.'", a: "The woman who is wearing the gray jacket is my new art teacher." },
+        { q: "Give phrases to make a sentence: My / grandfather / always / wait / patient / when / he / be / at / the / hospital / .", a: "My grandfather always waits patiently when he is at the hospital." },
+        { q: "Correct the mistake: 'What does your new classmate like? He is very friendly, patient, and athletic.'", a: "What is your new classmate like? (Personality = 'What is... like?')." },
+        { q: "Unscramble the sentence: the / is / woman / who / she / talking / is / loudly / very / ?", a: "Who is the woman who is talking very loudly?" },
+        { q: "Combine these 2 sentences using that: 'I lost the necklace. My mother made it for me in her art class.'", a: "I lost the necklace that my mother made for me in her art class." },
+        { q: "Give phrases to make a sentence: The / soccer / players / not / be / very / good / at / play / today / because / they / be / tired / .", a: "The soccer players are not very good at playing today because they are tired." },
+        { q: "Correct the mistake: 'He looks like bald, but he actually has blonde, short , straight hair.'", a: "He is bald, but he actually has short straight blonde hair." },
+        { q: "Unscramble the sentence: badly / played / you / because / you / didn't / sit / quietly / and / listen / .", a: "You played badly because you didn't sit quietly and listen." },
+        { q: "Give phrases to make a sentence: The / man / who / wear / the / gray / jacket / have / short / wavy / brown / hair / and / big / eyebrow / .", a: "The man who wears (is wearing) the gray jacket has short wavy brown hair and big eyebrows." },
+        { q: "Correct the mistakes (2 errors): 'She’s the person that is good at bowling, but she always walks slow.'", a: "She’s the person who is good at bowling, but she always walks slowly." },
+        { q: "Combine these 2 sentences using who: 'Do you know the man? He is sitting quietly in the corner near the door.'", a: "Do you know the man who is sitting quietly in the corner near the door?" },
+        { q: "Unscramble the sentence: look / what / does / the / man / who / is / wearing / the / gray / jacket / like / ?", a: "What does the man who is wearing the gray jacket look like?" },
+        { q: "Give phrases to make a sentence: He / have / curly / blonde / long / hair / and / he / look / like / a / famous / movie / actor / .", a: "He has long curly blonde hair and he looks like a famous movie actor." },
+        { q: "Correct the mistake: 'My friends are really patienly, and they always wait for me when I am late.'", a: "My friends are really patient, and they always wait for me when I am late." }
+    ];
+
+    const vocabulary = {
+        unit1: {
+            l1: { type: 'guess', words: [{word: "curly hair", hint: "Small circles"}, {word: "beard", hint: "Chin"}, {word: "mustache", hint: "Lip"}, {word: "bald", hint: "No hair"}, {word: "eyebrows", hint: "Above eyes"}, {word: "bangs", hint: "Over forehead"}] },
+            l5: { type: 'unscramble', words: [{word: "cell phone", hint: "Mobile phone"}, {word: "gloves", hint: "Hands"}, {word: "necklace", hint: "Neck"}, {word: "scarf", hint: "Warmth"}, {word: "tie", hint: "Collar"}, {word: "bracelets", hint: "Wrist"}, {word: "purse", hint: "Small bag"}, {word: "sunglasses", hint: "Sun protection"}] },
+            l7: { type: 'choice_mix', words: [{word: "cell", hint: "Smallest part"}, {word: "gene", hint: "Controls looks"}, {word: "pair", hint: "Two together"}, {word: "identical", hint: "Exactly same"}, {word: "twin", hint: "Born together"}] }
+        },
+        unit2: {
+            l1: { type: 'guess', words: [{word: "quiet", hint: "Not loud"}, {word: "confident", hint: "Sure"}, {word: "smart", hint: "Intelligent"}, {word: "friendly", hint: "Kind"}, {word: "funny", hint: "Laugh"}, {word: "athletic", hint: "Sports"}, {word: "patient", hint: "Wait"}] },
+            l5: { type: 'unscramble', words: [{word: "quietly", hint: "In a quiet way"}, {word: "slowly", hint: "Slow manner"}, {word: "well", hint: "Good way"}, {word: "quickly", hint: "Fast way"}, {word: "badly", hint: "Poor manner"}, {word: "loudly", hint: "Noisy manner"}] },
+            l7: { type: 'choice_mix', words: [{word: "role model", hint: "Look up to"}, {word: "inspire", hint: "Motivate"}, {word: "brave", hint: "Not afraid"}, {word: "hero", hint: "Admired person"}, {word: "dream", hint: "Future goal"}, {word: "alone", hint: "By yourself"}] }
+        }
+    };
+
+    let currentBranch = 'vocab', currentTeam = 1, scores = { 1: 0, 2: 0 }, openedBoxes = new Set(), selectedBoxIdx = -1;
+    let arrowPos = 0, arrowSpeed = 1.8, arrowDir = 1, arrowActive = false, segments = [], animationId = null;
+    let reviewList = [], reviewIdx = 0, reviewCompleted = [];
+
+    function hideAll() {
+        ['screen-main', 'screen-lessons', 'screen-boxes', 'screen-question', 'screen-points', 'screen-review'].forEach(id => {
+            document.getElementById(id).classList.add('hidden');
+        });
+        if (animationId) cancelAnimationFrame(animationId);
+        arrowActive = false;
+    }
+
+    function switchBranch(branch) {
+        currentBranch = branch;
+        document.getElementById('tab-vocab').className = branch === 'vocab' ? 'tab-btn active' : 'tab-btn';
+        document.getElementById('tab-grammar').className = branch === 'grammar' ? 'tab-btn active' : 'tab-btn';
+        if (branch === 'grammar') {
+            document.getElementById('branch-title').innerText = "Grammar Challenge Game";
+            initGrammarGame();
+        } else {
+            document.getElementById('branch-title').innerText = "Vocabulary Review";
+            showMainMenu();
+        }
+    }
+
+    function showMainMenu() { hideAll(); document.getElementById('screen-main').classList.remove('hidden'); }
+
+    function initGrammarGame() {
+        hideAll();
+        document.getElementById('screen-boxes').classList.remove('hidden');
+        const container = document.getElementById('box-container');
+        container.innerHTML = '';
+        for (let i = 0; i < 16; i++) {
+            const box = document.createElement('div');
+            box.className = `box ${openedBoxes.has(i) ? 'opened' : ''}`;
+            box.innerText = i + 1;
+            box.onclick = () => openBox(i);
+            container.appendChild(box);
+        }
+        updateScoreboard();
+    }
+
+    function updateScoreboard() {
+        document.getElementById('score-t1').innerText = `Team 1: ${scores[1]}`;
+        document.getElementById('score-t2').innerText = `Team 2: ${scores[2]}`;
+        document.getElementById('score-t1').className = `team-score t1 ${currentTeam === 1 ? 'active' : ''}`;
+        document.getElementById('score-t2').className = `team-score t2 ${currentTeam === 2 ? 'active' : ''}`;
+        document.getElementById('turn-display').innerText = `Team ${currentTeam}'s Turn`;
+    }
+
+    function openBox(idx) {
+        if (openedBoxes.has(idx)) return;
+        selectedBoxIdx = idx;
+        openedBoxes.add(idx);
+        hideAll();
+        document.getElementById('screen-question').classList.remove('hidden');
+        document.getElementById('q-number-label').innerText = `Question #${idx + 1}`;
+        document.getElementById('q-text').innerText = grammarQuestions[idx].q;
+        document.getElementById('q-ans').innerText = grammarQuestions[idx].a;
+        document.getElementById('ans-container').classList.add('hidden');
+        document.getElementById('q-initial-btns').classList.remove('hidden');
+    }
+
+    function returnToGrid() { openedBoxes.delete(selectedBoxIdx); initGrammarGame(); }
+    function showAnswer() { document.getElementById('ans-container').classList.remove('hidden'); document.getElementById('q-initial-btns').classList.add('hidden'); }
+
+    function handleResult(correct) {
+        if (correct) { playSound('success'); startPointGame(); }
+        else { playSound('fail'); nextTurn(); }
+    }
+
+    function nextTurn() { currentTeam = currentTeam === 1 ? 2 : 1; initGrammarGame(); }
+
+    // --- REFINED ASYMMETRIC POINT GAME (INCREASED GREEN SIZE) ---
+    function startPointGame() {
+        hideAll();
+        document.getElementById('screen-points').classList.remove('hidden');
+        document.getElementById('point-title').innerText = `Team ${currentTeam}: Hit for points!`;
+        document.getElementById('point-feedback').innerText = "";
+        document.getElementById('hit-line-mark').classList.add('hidden');
+        generateSegments();
+        arrowPos = 0; arrowDir = 1;
+        arrowSpeed = 1.7 + Math.random() * 0.9; 
+        arrowActive = true;
+        animate();
+    }
+
+    function generateSegments() {
+        const line = document.getElementById('point-line');
+        line.innerHTML = '';
+        
+        // Define hierarchy with slightly larger units for Green.
+        // Hierarchy: Green(8-11) < Blue(12-20) < Orange(21-34) < Red(35-52)
+        const wG = 8 + Math.random() * 3; // Green is now notably bigger (8-11 units)
+        
+        const wB1 = 12 + Math.random() * 8; 
+        const wB2 = 12 + Math.random() * 8;
+        const wO1 = 21 + Math.random() * 13;
+        const wO2 = 21 + Math.random() * 13;
+        const wR1 = 35 + Math.random() * 17;
+        const wR2 = 35 + Math.random() * 17;
+        
+        const pattern = [
+            { id: 'red', pts: 0, w: wR1, label: '0' },
+            { id: 'orange', pts: 1, w: wO1, label: '1' },
+            { id: 'blue', pts: 3, w: wB1, label: '3' },
+            { id: 'green', pts: 5, w: wG, label: '5' },
+            { id: 'blue', pts: 3, w: wB2, label: '3' },
+            { id: 'orange', pts: 1, w: wO2, label: '1' },
+            { id: 'red', pts: 0, w: wR2, label: '0' }
+        ];
+
+        const totalWidth = pattern.reduce((sum, s) => sum + s.w, 0);
+        segments = [];
+        let currentX = 0;
+        
+        pattern.forEach(p => {
+            const widthPct = (p.w / totalWidth) * 100;
+            const div = document.createElement('div');
+            div.className = `segment seg-${p.id}`;
+            div.style.width = widthPct + '%';
+            div.innerText = p.label;
+            line.appendChild(div);
+            segments.push({ start: currentX, end: currentX + widthPct, pts: p.pts });
+            currentX += widthPct;
+        });
+    }
+
+    function animate() {
+        if (!arrowActive) return;
+        arrowPos += arrowSpeed * arrowDir;
+        if (arrowPos >= 100) { arrowPos = 100; arrowDir = -1; }
+        else if (arrowPos <= 0) { arrowPos = 0; arrowDir = 1; }
+        document.getElementById('arrow').style.left = arrowPos + '%';
+        animationId = requestAnimationFrame(animate);
+    }
+
+    function stopArrow() {
+        if (!arrowActive) return;
+        const capturedPos = arrowPos; 
+        arrowActive = false;
+        if (animationId) cancelAnimationFrame(animationId);
+        
+        const hitMark = document.getElementById('hit-line-mark');
+        hitMark.style.left = capturedPos + '%';
+        hitMark.classList.remove('hidden');
+        
+        let earned = 0;
+        for (let s of segments) {
+            if (capturedPos >= s.start && capturedPos <= s.end) {
+                earned = s.pts;
+                break;
+            }
+        }
+        
+        scores[currentTeam] += earned;
+        const fb = document.getElementById('point-feedback');
+        if (earned > 0) { playSound('hit'); fb.innerText = `BOOM! +${earned} points!`; fb.style.color = "green"; }
+        else { playSound('fail'); fb.innerText = "MISSED! 0 points."; fb.style.color = "red"; }
+        setTimeout(() => nextTurn(), 2200);
+    }
+
+    // --- VOCAB REVIEW ---
+    function showLessons(unit) {
+        hideAll();
+        document.getElementById('screen-lessons').classList.remove('hidden');
+        document.getElementById('unit-title').innerText = `Unit ${unit}`;
+        const container = document.getElementById('lesson-buttons');
+        container.innerHTML = '';
+        [1, 5, 7].forEach(l => {
+            const btn = document.createElement('button');
+            btn.className = 'secondary'; btn.innerText = `Lesson ${l}`;
+            btn.onclick = () => startReview(unit, l); container.appendChild(btn);
+        });
+    }
+
+    function startReview(u, l) {
+        const raw = vocabulary[`unit${u}`][`l${l}`];
+        reviewList = raw.words.map(w => {
+            let t = raw.type; if (t === 'choice_mix') t = Math.random() > 0.5 ? 'choice_w2m' : 'choice_m2w';
+            return { ...w, type: t };
+        });
+        reviewList.sort(() => Math.random() - 0.5);
+        reviewIdx = 0; reviewCompleted = new Array(reviewList.length).fill(false);
+        hideAll();
+        document.getElementById('screen-review').classList.remove('hidden');
+        document.getElementById('review-title').innerText = `U${u} L${l}`;
+        loadReviewWord();
+    }
+
+    function loadReviewWord() {
+        const data = reviewList[reviewIdx];
+        const display = document.getElementById('review-word-display'), hint = document.getElementById('review-hint'), inputArea = document.getElementById('review-input-area'), choiceArea = document.getElementById('review-choice-area'), msg = document.getElementById('review-message');
+        msg.innerText = "";
+        document.getElementById('review-score-display').innerText = `${reviewIdx + 1} / ${reviewList.length}`;
+        document.getElementById('review-next').classList.add('hidden');
+        const nav = document.getElementById('review-nav'); nav.innerHTML = '';
+        reviewList.forEach((_, i) => {
+            const dot = document.createElement('div');
+            dot.className = `nav-dot ${i === reviewIdx ? 'active' : ''} ${reviewCompleted[i] ? 'completed' : ''}`;
+            dot.innerText = i + 1;
+            dot.onclick = () => { reviewIdx = i; loadReviewWord(); };
+            nav.appendChild(dot);
+        });
+
+        if (data.type === 'guess' || data.type === 'unscramble') {
+            inputArea.classList.remove('hidden'); choiceArea.classList.add('hidden'); display.classList.remove('hidden');
+            hint.innerText = data.hint;
+            if (data.type === 'guess') display.innerText = data.word[0] + data.word.substring(1).replace(/[a-z]/g, ' _');
+            else display.innerText = data.word.split('').sort(() => Math.random() - 0.5).join(' ');
+            document.getElementById('review-input').value = ''; document.getElementById('review-input').focus();
+        } else {
+            inputArea.classList.add('hidden'); choiceArea.classList.remove('hidden'); display.classList.add('hidden');
+            choiceArea.innerHTML = '';
+            let options = [];
+            if (data.type === 'choice_w2m') {
+                hint.innerHTML = `What is the meaning of: <b>${data.word}</b>?`;
+                options.push({ text: data.hint, correct: true });
+                const pool = reviewList.filter(x => x.hint !== data.hint).map(x => x.hint);
+                while(options.length < 4 && pool.length > 0) options.push({ text: pool.splice(Math.floor(Math.random()*pool.length), 1)[0], correct: false });
+            } else {
+                hint.innerHTML = `Which word means: <i>"${data.hint}"</i>?`;
+                options.push({ text: data.word, correct: true });
+                const pool = reviewList.filter(x => x.word !== data.word).map(x => x.word);
+                while(options.length < 4 && pool.length > 0) options.push({ text: pool.splice(Math.floor(Math.random()*pool.length), 1)[0], correct: false });
+            }
+            options.sort(() => Math.random() - 0.5).forEach(o => {
+                const b = document.createElement('button'); b.className = 'choice-btn'; b.innerText = o.text;
+                b.onclick = (e) => checkReviewChoice(e.target, o.correct); choiceArea.appendChild(b);
+            });
+        }
+    }
+
+    function checkReviewAnswer() {
+        const val = document.getElementById('review-input').value.trim().toLowerCase();
+        const target = reviewList[reviewIdx].word.toLowerCase();
+        if (val === target) { playSound('success'); document.getElementById('review-message').innerText = "Correct! ✨"; document.getElementById('review-word-display').innerText = reviewList[reviewIdx].word; markReviewCompleted(); }
+        else { playSound('fail'); document.getElementById('review-message').innerText = "Try again!"; }
+    }
+
+    function checkReviewChoice(btn, correct) {
+        if (correct) { playSound('success'); btn.classList.add('correct-ans'); markReviewCompleted(); document.querySelectorAll('.choice-btn').forEach(b => b.disabled = true); }
+        else { playSound('fail'); btn.classList.add('wrong-ans'); btn.disabled = true; }
+    }
+
+    function markReviewCompleted() { reviewCompleted[reviewIdx] = true; document.getElementById('review-next').classList.remove('hidden'); }
+    function nextReviewWord() { if (reviewIdx < reviewList.length - 1) { reviewIdx++; loadReviewWord(); } else if (reviewCompleted.every(v => v)) { hideAll(); document.getElementById('screen-main').innerHTML = `<h1>🎉 Great Job!</h1><button onclick="location.reload()">Return Home</button>`; document.getElementById('screen-main').classList.remove('hidden'); } else { reviewIdx = reviewCompleted.indexOf(false); loadReviewWord(); } }
+
+    showMainMenu();
+</script>
+</body>
+</html>
