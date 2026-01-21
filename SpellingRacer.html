@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spelling Racer: Drift & Spell</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- MediaPipe Face Mesh -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Racing+Sans+One&family=Roboto:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            overflow: hidden;
+            background-color: #1e293b;
+            user-select: none;
+        }
+
+        .title-font {
+            font-family: 'Racing Sans One', cursive;
+        }
+
+        #game-container {
+            perspective: 800px;
+            overflow: hidden;
+        }
+
+        .mirror {
+            transform: scaleX(-1);
+        }
+
+        .crash-effect {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-4px, 0, 0); }
+            20%, 80% { transform: translate3d(8px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-8px, 0, 0); }
+            40%, 60% { transform: translate3d(8px, 0, 0); }
+        }
+
+        /* Custom Scrollbar */
+        textarea::-webkit-scrollbar { width: 8px; }
+        textarea::-webkit-scrollbar-track { background: #334155; border-radius: 4px; }
+        textarea::-webkit-scrollbar-thumb { background: #facc15; border-radius: 4px; }
+
+        .car-option {
+            transition: all 0.2s;
+            border: 3px solid transparent;
+        }
+        .car-option.selected {
+            border-color: #facc15; /* Yellow border */
+            transform: scale(1.15);
+            box-shadow: 0 0 10px rgba(250, 204, 21, 0.6);
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="h-screen w-full bg-slate-900 text-white flex flex-col transition-colors duration-500" id="main-body">
+
+    <!-- SETUP SCREEN -->
+    <div id="setup-screen" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-900/95 p-4 overflow-y-auto backdrop-blur-md">
+        <div class="max-w-4xl w-full flex flex-col md:flex-row gap-6 items-center justify-center">
+            
+            <!-- Left: Settings -->
+            <div class="w-full max-w-md bg-slate-800 p-6 rounded-2xl shadow-2xl border border-slate-700">
+                <h1 class="text-5xl text-yellow-400 title-font mb-2 tracking-wider italic text-center">SPELLING RACER</h1>
+                <p class="text-slate-400 mb-4 text-center text-xs uppercase tracking-widest">Tilt Head Left/Right to Steer</p>
+                
+                <div class="flex gap-4 mb-4">
+                    <div class="flex-1">
+                        <label class="block text-xs font-bold text-slate-400 mb-1 uppercase">Word List</label>
+                        <textarea id="word-input" class="w-full h-24 bg-slate-900 text-white p-3 rounded-xl border border-slate-600 focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 outline-none resize-none font-mono text-sm placeholder-slate-600" placeholder="necessary&#10;believe">necessary
+believe
+separate
+definitely
+occurrence
+schedule
+restaurant
+guarantee
+receive
+beginning</textarea>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-end gap-4 mb-6">
+                    <!-- Compact Car Garage -->
+                    <div class="flex-1">
+                        <label class="block text-xs font-bold text-slate-400 mb-2 uppercase">Your Car</label>
+                        <div class="flex justify-start gap-3 bg-slate-900/50 p-2 rounded-xl border border-slate-700 w-fit">
+                            <button onclick="selectCar('#facc15')" class="car-option selected w-8 h-8 rounded bg-yellow-400 shadow-sm" aria-label="Yellow Car"></button>
+                            <button onclick="selectCar('#ef4444')" class="car-option w-8 h-8 rounded bg-red-500 shadow-sm" aria-label="Red Car"></button>
+                            <button onclick="selectCar('#3b82f6')" class="car-option w-8 h-8 rounded bg-blue-500 shadow-sm" aria-label="Blue Car"></button>
+                            <button onclick="selectCar('#22c55e')" class="car-option w-8 h-8 rounded bg-green-500 shadow-sm" aria-label="Green Car"></button>
+                        </div>
+                    </div>
+
+                    <!-- Theme Toggle -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-2 uppercase text-right">Theme</label>
+                        <div class="flex bg-slate-900/50 p-1 rounded-lg border border-slate-700">
+                            <button onclick="setTheme('NIGHT')" id="btn-night" class="px-3 py-1 rounded text-xs font-bold bg-slate-600 text-white transition-colors">🌙</button>
+                            <button onclick="setTheme('DAY')" id="btn-day" class="px-3 py-1 rounded text-xs font-bold text-slate-400 hover:text-white transition-colors">☀️</button>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="initGame()" class="w-full bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-400 hover:to-orange-500 text-black font-black text-2xl py-3 rounded-xl transition-transform hover:scale-105 shadow-lg uppercase italic border-b-4 border-orange-700 active:border-b-0 active:translate-y-1">
+                    Start Engine 🏎️
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GAME UI -->
+    <div id="game-ui" class="hidden relative w-full h-full flex flex-col">
+        
+        <!-- Canvas Layer -->
+        <canvas id="gameCanvas" class="absolute inset-0 w-full h-full z-0"></canvas>
+
+        <!-- HUD -->
+        <div class="absolute top-0 left-0 w-full p-4 flex justify-between items-start z-20 pointer-events-none">
+            <div class="flex gap-4">
+                <div class="bg-black/60 backdrop-blur rounded-xl px-6 py-2 border border-white/20">
+                    <div class="text-xs text-slate-400 uppercase font-bold">Score</div>
+                    <div class="text-4xl title-font text-yellow-400" id="score-display">0</div>
+                </div>
+                
+                <div class="bg-black/60 backdrop-blur rounded-xl px-6 py-2 border border-white/20">
+                    <div class="text-xs text-slate-400 uppercase font-bold">Speed</div>
+                    <div class="text-4xl title-font text-cyan-400"><span id="speed-display">60</span> <span class="text-sm">MPH</span></div>
+                </div>
+            </div>
+
+            <!-- Pause Button -->
+            <button onclick="togglePause()" class="pointer-events-auto bg-black/60 hover:bg-black/80 backdrop-blur rounded-full w-12 h-12 flex items-center justify-center border border-white/20 transition-colors shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Camera View (Bottom Right) -->
+        <div class="absolute bottom-4 right-4 z-30">
+            <div class="w-32 h-32 md:w-48 md:h-48 rounded-2xl border-4 border-yellow-400 overflow-hidden shadow-[0_0_20px_rgba(250,204,21,0.5)] bg-black relative">
+                <video id="input_video" class="w-full h-full object-cover mirror"></video>
+                <div id="steering-wheel" class="absolute inset-0 border-4 border-white/20 rounded-2xl pointer-events-none">
+                    <div class="absolute top-2 left-1/2 transform -translate-x-1/2 bg-red-500 w-1 h-4"></div>
+                </div>
+            </div>
+            <div class="text-center mt-2 font-bold text-yellow-400 bg-black/50 rounded px-2" id="steer-text">CENTER</div>
+        </div>
+
+    </div>
+
+    <!-- Pause Modal -->
+    <div id="pause-modal" class="hidden absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div class="text-center bg-slate-800 p-8 rounded-2xl border border-slate-600 shadow-2xl">
+            <h2 class="text-5xl text-yellow-400 title-font mb-6">PAUSED</h2>
+            <div class="flex flex-col gap-4">
+                <button onclick="togglePause()" class="px-8 py-3 bg-cyan-500 hover:bg-cyan-600 text-black font-bold text-xl rounded-xl transition-transform hover:scale-105 shadow-lg border-b-4 border-cyan-700 active:border-b-0 active:translate-y-1">
+                    RESUME
+                </button>
+                <button onclick="showSetup()" class="px-8 py-3 bg-slate-600 hover:bg-slate-500 text-white font-bold text-xl rounded-xl transition-transform hover:scale-105 border-b-4 border-slate-800 active:border-b-0 active:translate-y-1">
+                    QUIT TO MENU
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over" class="hidden absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+        <div class="text-center">
+            <h2 class="text-6xl text-red-500 title-font mb-2 animate-bounce">CRASHED!</h2>
+            <p class="text-xl text-white mb-6">You hit the wrong word!</p>
+            <div class="text-8xl mb-6">💥</div>
+            <p class="text-slate-400 mb-8">Final Score: <span id="final-score" class="text-white font-bold text-2xl">0</span></p>
+            
+            <div class="flex flex-col gap-4">
+                <button onclick="resetRace()" class="px-10 py-4 bg-white hover:bg-gray-100 text-black font-black text-xl rounded-full hover:scale-105 transition-transform shadow-lg border-b-4 border-gray-400 active:border-b-0 active:translate-y-1">
+                    RACE AGAIN
+                </button>
+                <button onclick="showSetup()" class="px-10 py-3 bg-slate-700 hover:bg-slate-600 text-white font-bold text-lg rounded-full hover:scale-105 transition-transform shadow-lg">
+                    EDIT WORDS
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. GAME CONFIG ---
+        const LANE_COUNT = 2;
+        let SPEED = 5; // Increased starting speed (was 3)
+        let GAME_ACTIVE = false;
+        let GAME_PAUSED = false;
+        let SCORE = 0;
+        let LAST_SPAWN = 0;
+        let LAST_DECO = 0;
+        let SPAWN_RATE = 2500; // Faster spawn rate (was 3500)
+        let PLAYER_COLOR = '#facc15'; // Default Yellow
+        let THEME = 'NIGHT'; // 'DAY' or 'NIGHT'
+        let SUCCESSFUL_HITS = 0; 
+        
+        // --- 2. STATE ---
+        let words = [];
+        let playerLane = 0; // 0 = Left, 1 = Right
+        let targetLane = 0; 
+        
+        let enemies = []; 
+        let decorations = []; // Scenery objects
+
+        const CAR_COLORS = [
+            '#ef4444', '#f97316', '#f59e0b', '#84cc16', 
+            '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', 
+            '#d946ef', '#f43f5e'
+        ];
+
+        // Audio
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // --- 3. SPELLING LOGIC ---
+        function generateWrong(word) {
+            const len = word.length;
+            const arr = word.split('');
+            // Ensure we have a valid word to work with
+            if (len < 2) return word + 's';
+
+            // Pick a strategy
+            const type = Math.floor(Math.random() * 4); // 0-3
+
+            let resultArr = [...arr];
+
+            // 0: Miss a letter
+            if (type === 0 && len > 2) {
+                const idx = Math.floor(Math.random() * len);
+                resultArr.splice(idx, 1);
+            }
+            // 1: Wrong letter (Similar Sound/Look)
+            else if (type === 1) {
+                const idx = Math.floor(Math.random() * len);
+                const char = arr[idx].toLowerCase();
+                const map = {
+                    'a': ['e'], 'e': ['a', 'i'], 'i': ['e', 'y'], 'o': ['u'], 'u': ['o'],
+                    'c': ['k', 's'], 'k': ['c'], 's': ['z', 'c'], 'z': ['s'], 
+                    'f': ['ph'], 'm': ['n'], 'n': ['m'], 'b': ['d', 'p'], 'd': ['b'], 'p': ['b']
+                };
+                let sub = 'x';
+                if (map[char]) {
+                    sub = map[char][Math.floor(Math.random() * map[char].length)];
+                } else {
+                    // Fallback: simple shift
+                    sub = String.fromCharCode(char.charCodeAt(0) + 1);
+                }
+                resultArr[idx] = sub;
+            }
+            // 2: Double a letter
+            else if (type === 2) {
+                const idx = Math.floor(Math.random() * len);
+                // Ensure we don't double a space if sentence
+                if (resultArr[idx] !== ' ') {
+                    resultArr.splice(idx, 0, resultArr[idx]);
+                }
+            }
+            // 3: Misorder (Swap)
+            else {
+                if (len > 1) {
+                    const idx = Math.floor(Math.random() * (len - 1));
+                    const temp = resultArr[idx];
+                    resultArr[idx] = resultArr[idx+1];
+                    resultArr[idx+1] = temp;
+                }
+            }
+
+            const res = resultArr.join('');
+            // Retry if we accidentally made the same word (rare but possible)
+            return res === word ? generateWrong(word) : res;
+        }
+
+        // --- 4. UI FUNCTIONS ---
+        function selectCar(color) {
+            PLAYER_COLOR = color;
+            const btns = document.querySelectorAll('.car-option');
+            btns.forEach(btn => {
+                if(btn.getAttribute('onclick').includes(color)) {
+                    btn.classList.add('selected');
+                } else {
+                    btn.classList.remove('selected');
+                }
+            });
+        }
+
+        function setTheme(theme) {
+            THEME = theme;
+            const nightBtn = document.getElementById('btn-night');
+            const dayBtn = document.getElementById('btn-day');
+            
+            if (theme === 'NIGHT') {
+                nightBtn.className = "px-3 py-1 rounded text-xs font-bold bg-slate-600 text-white transition-colors";
+                dayBtn.className = "px-3 py-1 rounded text-xs font-bold text-slate-400 hover:text-white transition-colors";
+            } else {
+                dayBtn.className = "px-3 py-1 rounded text-xs font-bold bg-blue-400 text-white transition-colors";
+                nightBtn.className = "px-3 py-1 rounded text-xs font-bold text-slate-400 hover:text-white transition-colors";
+            }
+        }
+
+        // --- 5. GAME INITIALIZATION ---
+        function initGame() {
+            const raw = document.getElementById('word-input').value;
+            words = raw.split('\n').map(w => w.trim()).filter(w => w.length > 0);
+            
+            if (words.length < 1) return alert("Please enter at least 1 word.");
+
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('game-ui').classList.remove('hidden');
+            
+            if (!window.cameraStarted) {
+                startCamera();
+                window.cameraStarted = true;
+            }
+            
+            resetRace();
+            startGameLoop();
+        }
+
+        function resetRace() {
+            SCORE = 0;
+            SPEED = 5; // Reset to harder speed
+            SPAWN_RATE = 2500; // Reset to harder rate
+            LAST_SPAWN = 0;
+            SUCCESSFUL_HITS = 0;
+            enemies = [];
+            decorations = [];
+            playerLane = 0;
+            targetLane = 0;
+            
+            GAME_ACTIVE = true;
+            GAME_PAUSED = false;
+            
+            document.getElementById('score-display').innerText = '0';
+            document.getElementById('speed-display').innerText = '60';
+            document.getElementById('game-over').classList.add('hidden');
+            document.getElementById('pause-modal').classList.add('hidden');
+            document.body.classList.remove('crash-effect');
+        }
+
+        function showSetup() {
+            GAME_ACTIVE = false;
+            document.getElementById('game-ui').classList.add('hidden');
+            document.getElementById('game-over').classList.add('hidden');
+            document.getElementById('pause-modal').classList.add('hidden');
+            document.getElementById('setup-screen').classList.remove('hidden');
+        }
+
+        function togglePause() {
+            if (!GAME_ACTIVE) return;
+            GAME_PAUSED = !GAME_PAUSED;
+            if (GAME_PAUSED) {
+                document.getElementById('pause-modal').classList.remove('hidden');
+            } else {
+                document.getElementById('pause-modal').classList.add('hidden');
+            }
+        }
+
+        // --- 6. MEDIAPIPE CAMERA ---
+        async function startCamera() {
+            const videoElement = document.getElementById('input_video');
+            const faceMesh = new FaceMesh({locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+            }});
+            
+            faceMesh.setOptions({
+                maxNumFaces: 1,
+                refineLandmarks: true,
+                minDetectionConfidence: 0.5,
+                minTrackingConfidence: 0.5
+            });
+
+            faceMesh.onResults(onFaceResults);
+
+            const camera = new Camera(videoElement, {
+                onFrame: async () => {
+                    await faceMesh.send({image: videoElement});
+                },
+                width: 480,
+                height: 480
+            });
+            camera.start();
+        }
+
+        function onFaceResults(results) {
+            if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) return;
+            
+            const landmarks = results.multiFaceLandmarks[0];
+            const leftEye = landmarks[33];
+            const rightEye = landmarks[263];
+            
+            const dx = rightEye.x - leftEye.x;
+            const dy = rightEye.y - leftEye.y;
+            const angle = Math.atan2(dy, dx) * (180 / Math.PI); 
+            
+            const wheel = document.getElementById('steering-wheel');
+            wheel.style.transform = `rotate(${angle}deg)`;
+            
+            const threshold = 10; 
+            const steerText = document.getElementById('steer-text');
+
+            if (angle > threshold) {
+                targetLane = 0; // Left
+                steerText.innerText = "<< LEFT";
+                steerText.className = "text-center mt-2 font-bold text-cyan-400 bg-black/50 rounded px-2";
+            } else if (angle < -threshold) {
+                targetLane = 1; // Right
+                steerText.innerText = "RIGHT >>";
+                steerText.className = "text-center mt-2 font-bold text-cyan-400 bg-black/50 rounded px-2";
+            } else {
+                steerText.innerText = "CENTER";
+                steerText.className = "text-center mt-2 font-bold text-yellow-400 bg-black/50 rounded px-2";
+            }
+        }
+
+        // --- 7. GAME LOOP ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        function startGameLoop() {
+            if (!window.loopStarted) {
+                resize();
+                window.addEventListener('resize', resize);
+                requestAnimationFrame(update);
+                window.loopStarted = true;
+            }
+        }
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        function spawnEnemy() {
+            const correctWord = words[Math.floor(Math.random() * words.length)];
+            const wrongWord = generateWrong(correctWord);
+            const correctLane = Math.random() < 0.5 ? 0 : 1;
+            
+            const color1 = CAR_COLORS[Math.floor(Math.random() * CAR_COLORS.length)];
+            const color2 = CAR_COLORS[Math.floor(Math.random() * CAR_COLORS.length)];
+
+            // Correct Car
+            enemies.push({
+                x: 0, 
+                y: -100,
+                z: 1000, 
+                lane: correctLane,
+                word: correctWord,
+                isCorrect: true,
+                color: color1,
+                isDead: false,
+                vx: 0, vy: 0, rotation: 0, rotationSpeed: 0
+            });
+
+            // Wrong Car
+            enemies.push({
+                x: 0,
+                y: -100,
+                z: 1000,
+                lane: correctLane === 0 ? 1 : 0,
+                word: wrongWord,
+                isCorrect: false,
+                color: color2,
+                isDead: false,
+                vx: 0, vy: 0, rotation: 0, rotationSpeed: 0
+            });
+        }
+
+        function spawnDecoration() {
+            // Spawn items on sides
+            // Side: -1 (Left), 1 (Right)
+            decorations.push({
+                z: 1000,
+                side: -1,
+                type: Math.random() < 0.3 ? 'bush' : (THEME === 'NIGHT' ? 'lamp' : 'tree'),
+                color: `hsl(${Math.random() * 360}, 60%, 50%)` // Flower color
+            });
+            decorations.push({
+                z: 1000,
+                side: 1,
+                type: Math.random() < 0.3 ? 'bush' : (THEME === 'NIGHT' ? 'lamp' : 'tree'),
+                color: `hsl(${Math.random() * 360}, 60%, 50%)`
+            });
+        }
+
+        function update(time) {
+            if (!GAME_ACTIVE) {
+                if (window.loopStarted) requestAnimationFrame(update);
+                return;
+            }
+            
+            if (GAME_PAUSED) {
+                requestAnimationFrame(update);
+                return;
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const roadW = canvas.width * 0.6;
+            const centerX = canvas.width / 2;
+            const horizonY = canvas.height * 0.3;
+            
+            // THEME COLORS
+            let skyColor, groundColor, roadColor, lineColor;
+            if (THEME === 'NIGHT') {
+                skyColor = '#0f172a';
+                groundColor = '#020617';
+                roadColor = '#334155';
+                lineColor = '#ffffff';
+            } else {
+                skyColor = '#38bdf8'; 
+                groundColor = '#4ade80'; // Lush Green
+                roadColor = '#64748b'; 
+                lineColor = '#facc15'; 
+            }
+
+            // Draw Sky/Ground
+            ctx.fillStyle = groundColor; 
+            ctx.fillRect(0, horizonY, canvas.width, canvas.height);
+            ctx.fillStyle = skyColor;
+            ctx.fillRect(0, 0, canvas.width, horizonY);
+            
+            // Draw Road
+            ctx.fillStyle = roadColor;
+            ctx.beginPath();
+            // Horizon separation: 180px
+            const horizonRoadWidth = 180; 
+            ctx.moveTo(centerX - horizonRoadWidth, horizonY); 
+            ctx.lineTo(centerX + horizonRoadWidth, horizonY);
+            ctx.lineTo(centerX + roadW/2, canvas.height);
+            ctx.lineTo(centerX - roadW/2, canvas.height);
+            ctx.fill();
+            
+            // Moving Lines
+            ctx.strokeStyle = lineColor;
+            ctx.lineWidth = 4;
+            ctx.setLineDash([40, 60]);
+            ctx.lineDashOffset = -time * (SPEED * 0.1);
+            ctx.beginPath();
+            ctx.moveTo(centerX, horizonY);
+            ctx.lineTo(centerX, canvas.height);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Spawn Cars
+            if (time - LAST_SPAWN > SPAWN_RATE) {
+                spawnEnemy();
+                LAST_SPAWN = time;
+            }
+
+            // Spawn Decorations (more freq)
+            if (time - LAST_DECO > (5000 / SPEED)) { // Faster speed = faster spawn
+                spawnDecoration();
+                LAST_DECO = time;
+            }
+
+            // Player Pos
+            playerLane += (targetLane - playerLane) * 0.1;
+            const laneOffset = (playerLane - 0.5) * (roadW / 2);
+            const pX = centerX + laneOffset;
+            const pY = canvas.height - 120;
+
+            // DRAW DECORATIONS (Painter's Algo: sort by Z, but we iterate backwards usually for cars.. decorations mixed?
+            // Simple approach: Draw decorations first (behind cars usually), loop backwards
+            for (let i = decorations.length - 1; i >= 0; i--) {
+                let d = decorations[i];
+                d.z -= SPEED;
+                if (d.z < 0) {
+                    decorations.splice(i, 1);
+                    continue;
+                }
+                
+                const progress = (1000 - d.z) / 1000;
+                const visualRoadW = horizonRoadWidth*2 + (roadW - horizonRoadWidth*2) * Math.pow(progress, 2); 
+                // Place further out
+                const xOffset = d.side === -1 ? -visualRoadW/1.5 : visualRoadW/1.5; 
+                const screenX = centerX + xOffset;
+                const screenY = horizonY + (canvas.height - horizonY) * progress;
+                const scale = 0.5 + 2.0 * progress;
+
+                drawDecoration(screenX, screenY, scale, d.type, d.color);
+            }
+
+            // Draw Enemies
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                let e = enemies[i];
+                
+                if (e.isDead) {
+                    e.x += e.vx;
+                    e.y += e.vy;
+                    e.vy += 1; 
+                    e.rotation += e.rotationSpeed;
+                    
+                    drawCar(e.x, e.y, e.lastScale || 1, e.word, e.color, e.rotation);
+                    
+                    if (e.y > canvas.height + 100) {
+                        enemies.splice(i, 1);
+                    }
+                    continue;
+                }
+
+                e.z -= SPEED; 
+                const progress = (1000 - e.z) / 1000; 
+                
+                if (progress >= 1.2) {
+                    enemies.splice(i, 1);
+                    continue;
+                }
+
+                const currentRoadW = horizonRoadWidth*2 + (roadW - horizonRoadWidth*2) * Math.pow(progress, 2); 
+                const laneX = e.lane === 0 ? -currentRoadW/4 : currentRoadW/4;
+                const screenX = centerX + laneX;
+                const screenY = horizonY + (canvas.height - horizonY) * progress;
+                const scale = 0.5 + 1.5 * progress;
+                
+                e.x = screenX;
+                e.y = screenY;
+                e.lastScale = scale;
+
+                // Collision
+                const playerVisualP = (pY - horizonY) / (canvas.height - horizonY);
+                const hitStart = playerVisualP - 0.05;
+                const hitEnd = playerVisualP + 0.05;
+
+                if (progress > hitStart && progress < hitEnd) {
+                    if (Math.abs(playerLane - e.lane) < 0.3) {
+                        if (e.isCorrect) {
+                            hitCorrect(e, screenX, screenY);
+                            continue;
+                        } else {
+                            gameOver();
+                        }
+                    }
+                }
+
+                drawCar(screenX, screenY, scale, e.word, e.color, 0);
+            }
+
+            drawPlayerCar(pX, pY);
+
+            requestAnimationFrame(update);
+        }
+
+        function checkSpeedIncrease() {
+            // Speed up every 1 hit
+            SPEED += 0.8; // Aggressive acceleration
+            if (SPAWN_RATE > 800) SPAWN_RATE -= 150;
+            document.getElementById('speed-display').innerText = Math.round(60 + SPEED * 10);
+        }
+
+        function drawDecoration(x, y, scale, type, color) {
+            ctx.save();
+            ctx.translate(x, y);
+            
+            if (type === 'lamp') {
+                // Pole
+                ctx.fillStyle = '#64748b';
+                const w = 5 * scale;
+                const h = 80 * scale;
+                ctx.fillRect(-w/2, -h, w, h);
+                // Light
+                ctx.fillStyle = '#fef08a'; // Yellow light
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#fef08a';
+                ctx.beginPath();
+                ctx.arc(0, -h, 8 * scale, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (type === 'tree') {
+                // Trunk
+                ctx.fillStyle = '#78350f';
+                const w = 10 * scale;
+                const h = 40 * scale;
+                ctx.fillRect(-w/2, -h, w, h);
+                // Leaves
+                ctx.fillStyle = '#15803d';
+                ctx.shadowBlur = 0;
+                ctx.beginPath();
+                ctx.arc(0, -h * 1.5, 30 * scale, 0, Math.PI * 2);
+                ctx.fill();
+                // Flowers
+                ctx.fillStyle = color;
+                for(let i=0; i<5; i++) {
+                    const fx = (Math.random() - 0.5) * 40 * scale;
+                    const fy = (-h * 1.5) + (Math.random() - 0.5) * 40 * scale;
+                    ctx.beginPath();
+                    ctx.arc(fx, fy, 4 * scale, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            } else {
+                // Bush
+                ctx.fillStyle = '#22c55e';
+                ctx.beginPath();
+                ctx.arc(0, 0, 15 * scale, Math.PI, 0); // Semicircle
+                ctx.fill();
+                // Flowers
+                ctx.fillStyle = color;
+                for(let i=0; i<3; i++) {
+                    const fx = (Math.random() - 0.5) * 20 * scale;
+                    const fy = (Math.random() - 0.5) * 10 * scale;
+                    ctx.beginPath();
+                    ctx.arc(fx, fy - 5*scale, 3 * scale, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            }
+
+            ctx.restore();
+        }
+
+        function drawCar(x, y, scale, text, color, rotation) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(rotation);
+            
+            ctx.font = `bold ${Math.max(14, 20 * scale)}px Roboto`;
+            const metrics = ctx.measureText(text);
+            const textW = metrics.width;
+            const w = Math.max(80 * scale, textW + (30 * scale));
+            const h = 40 * scale;
+
+            if (rotation === 0) {
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.beginPath();
+                ctx.ellipse(0, h/2 + 5*scale, w/2 + 5*scale, h/4, 0, 0, Math.PI*2);
+                ctx.fill();
+            }
+
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.roundRect(-w/2, -h/2, w, h, 8 * scale);
+            ctx.fill();
+            
+            ctx.fillStyle = 'rgba(0,0,0,0.1)';
+            ctx.fillRect(-w/2, -h/2, w, h/4);
+
+            ctx.fillStyle = '#ffffff'; 
+            ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+            ctx.lineWidth = 3 * scale;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.strokeText(text, 0, 2 * scale);
+            ctx.fillText(text, 0, 2 * scale);
+
+            ctx.restore();
+        }
+
+        function drawPlayerCar(x, y) {
+            const w = 120;
+            const h = 60;
+            ctx.save();
+            ctx.translate(x, y);
+            
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.beginPath();
+            ctx.ellipse(0, h/2 + 5, w/2 + 5, h/4, 0, 0, Math.PI*2);
+            ctx.fill();
+
+            ctx.fillStyle = PLAYER_COLOR; 
+            ctx.beginPath();
+            ctx.roundRect(-w/2, -h/2, w, h, 15);
+            ctx.fill();
+            
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.fillRect(-w/6, -h/2, w/3, h);
+
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            ctx.fillRect(-w/2 - 5, h/2 - 10, w + 10, 12);
+
+            ctx.fillStyle = 'white';
+            ctx.font = "bold 20px Roboto";
+            ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+            ctx.lineWidth = 3;
+            ctx.textAlign = 'center';
+            ctx.strokeText("YOU", 0, 0);
+            ctx.fillText("YOU", 0, 0);
+
+            ctx.restore();
+        }
+
+        function hitCorrect(enemy, x, y) {
+            SCORE += 100;
+            SUCCESSFUL_HITS++;
+            
+            // Speed up immediately after every hit
+            checkSpeedIncrease();
+
+            document.getElementById('score-display').innerText = SCORE;
+            
+            enemy.isDead = true;
+            enemy.vx = (Math.random() - 0.5) * 30; 
+            enemy.vy = -15 - Math.random() * 10; 
+            enemy.rotation = 0;
+            enemy.rotationSpeed = (Math.random() - 0.5) * 0.5;
+
+            confetti({
+                particleCount: 30,
+                spread: 50,
+                origin: { x: x / canvas.width, y: y / canvas.height },
+                colors: ['#facc15', '#ffffff'] 
+            });
+            
+            playSynth('success');
+        }
+
+        function gameOver() {
+            GAME_ACTIVE = false;
+            document.getElementById('final-score').innerText = SCORE;
+            document.getElementById('game-over').classList.remove('hidden');
+            document.body.classList.add('crash-effect');
+            playSynth('crash');
+        }
+
+        function playSynth(type) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'success') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1);
+            } else {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(20, audioCtx.currentTime + 0.5);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.5);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.5);
+            }
+        }
+
+        window.addEventListener('resize', resize);
+
+    </script>
+</body>
+</html>
