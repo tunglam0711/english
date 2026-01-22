@@ -365,6 +365,22 @@
     import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, collection, addDoc, onSnapshot, doc, setDoc, deleteDoc, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+    /* --- PORTABLE CLOUD CONFIGURATION ---
+       If you are deploying this to GitHub Pages or any other host, 
+       you must replace the null below with your own Firebase Config object.
+       Example: 
+       const EXTERNAL_CONFIG = { apiKey: "...", authDomain: "...", projectId: "...", ... };
+    */
+    const EXTERNAL_CONFIG = {
+      apiKey: "AIzaSyCdivRAtt3b0zQpJ8LBBkFR0tdAESeJ9aQ",
+      authDomain: "hit-the-green.firebaseapp.com",
+      projectId: "hit-the-green",
+      storageBucket: "hit-the-green.firebasestorage.app",
+      messagingSenderId: "30739380232",
+      appId: "1:30739380232:web:dbad5bb990ebf35c3af9bd",
+      measurementId: "G-105NQK63ZP"
+    }; 
+
     // --- SHARED STATE ---
     let user = null;
     let savedLibraries = [];
@@ -753,12 +769,22 @@
     // --- INITIALIZATION ---
     const initApp = async () => {
         try {
-            // Check if environment variables are available
-            if (typeof __firebase_config === 'undefined') {
-                throw new Error("Missing Firebase configuration.");
+            let firebaseConfig = null;
+
+            // 1. Check for platform-injected config
+            const hasPlatformConfig = typeof __firebase_config !== 'undefined' && __firebase_config;
+            
+            if (hasPlatformConfig) {
+                firebaseConfig = JSON.parse(__firebase_config);
+            } else if (EXTERNAL_CONFIG) {
+                // 2. Check for hardcoded external config (for GitHub/etc)
+                firebaseConfig = EXTERNAL_CONFIG;
             }
 
-            const firebaseConfig = JSON.parse(__firebase_config);
+            if (!firebaseConfig) {
+                throw new Error("No Firebase configuration found.");
+            }
+
             const app = initializeApp(firebaseConfig);
             auth = getAuth(app);
             db = getFirestore(app);
@@ -782,7 +808,6 @@
         } catch (e) { 
             console.error("Initialization Error:", e);
             document.getElementById('loading-text').innerText = "Offline Mode (Cloud Unavailable)";
-            // Hide overlay after a delay so user can read error
             setTimeout(() => {
                 document.getElementById('loading-overlay').classList.add('hidden');
             }, 3000);
