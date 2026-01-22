@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hit the Green - Challenge Game</title>
+    <title>Hit the Green - Cloud Challenge</title>
     <!-- Modern Game Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
@@ -65,6 +65,11 @@
             background: linear-gradient(to bottom, #22c55e, #0ea5e9);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+        }
+
+        @media (max-width: 600px) {
+            .game-title { font-size: 3rem; }
+            .container { padding: 20px; }
         }
 
         .hidden { display: none !important; }
@@ -184,7 +189,6 @@
         .box:hover:not(.opened) { transform: translateY(-5px); box-shadow: 0 12px 0 #14532d; filter: brightness(1.1); }
         .box.opened { background: #e2e8f0 !important; color: #94a3b8; box-shadow: none !important; cursor: default; }
 
-        /* Mini Game Styles - REFINED FOR PRECISION */
         .game-area { background: #ffffff; padding: 80px 40px; border-radius: 32px; position: relative; margin: 30px 0; overflow: hidden; border: 4px solid #f1f5f9; }
         
         .point-line { 
@@ -219,11 +223,11 @@
         
         .hit-marker { position: absolute; top: 0; width: 4px; height: 100%; background: #ffffff; z-index: 20; transform: translateX(-50%); opacity: 0.9; }
 
-        .point-legend { display: flex; justify-content: center; gap: 20px; margin-top: 25px; padding: 15px; background: #f0fdf4; border-radius: 20px; border: 1px dashed #22c55e; }
+        .point-legend { display: flex; justify-content: center; gap: 20px; margin-top: 25px; padding: 15px; background: #f0fdf4; border-radius: 20px; border: 1px dashed #22c55e; flex-wrap: wrap; }
         .legend-item { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 1rem; color: #166534; }
         .legend-color { width: 18px; height: 18px; border-radius: 4px; }
 
-        .btn-group { display: flex; gap: 16px; justify-content: center; margin-top: 30px; }
+        .btn-group { display: flex; gap: 16px; justify-content: center; margin-top: 30px; flex-wrap: wrap; }
         button { padding: 16px 32px; font-size: 1.1rem; font-weight: 800; border: none; border-radius: 20px; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 10px; }
         .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; }
         .btn-success { background: #10b981; color: white; }
@@ -233,13 +237,19 @@
 
         .feedback { font-size: 3.5rem; font-weight: 900; margin-top: 25px; height: 4rem; text-transform: uppercase; }
 
-        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; font-weight: 800; color: var(--primary-dark); }
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; font-weight: 800; color: var(--primary-dark); }
+        .spinner { border: 4px solid rgba(0,0,0,0.1); width: 40px; height: 40px; border-radius: 50%; border-left-color: var(--primary); animation: spin 1s linear infinite; margin-bottom: 10px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
         #current-selection-label { font-weight: 600; color: var(--primary-dark); margin-bottom: 20px; background: #dcfce7; padding: 10px 15px; border-radius: 12px; display: inline-block; }
     </style>
 </head>
 <body>
 
-<div id="loading-overlay" class="hidden">Loading...</div>
+<div id="loading-overlay">
+    <div class="spinner"></div>
+    <div id="loading-text">Connecting to Cloud...</div>
+</div>
 
 <div class="container">
     <!-- Setup Screen -->
@@ -276,7 +286,7 @@
 
         <div id="setup-step-2" class="setup-box hidden">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <label class="setup-label" style="margin: 0;">Your Library</label>
+                <label class="setup-label" style="margin: 0;">Cloud Library</label>
                 <button class="btn-ghost" onclick="backToStep1()" style="padding: 8px 16px;">Back to Setup</button>
             </div>
             <div class="lib-grid" id="lib-grid-container"></div>
@@ -291,7 +301,7 @@
             <input type="text" id="library-name" class="setup-input" placeholder="Library Name (e.g. Unit 5 Vocabulary)" style="margin-bottom: 20px;">
             <div style="display: flex; gap: 10px;">
                 <button class="btn-ghost" onclick="closeImportModal()" style="flex: 1; justify-content: center;">Cancel</button>
-                <button class="btn-success" onclick="saveToLibrary()" style="flex: 1; justify-content: center;">Save Question Set</button>
+                <button class="btn-success" onclick="saveToLibrary()" style="flex: 1; justify-content: center;">Save to Cloud</button>
             </div>
         </div>
     </div>
@@ -353,7 +363,23 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, getDocs, doc, setDoc, deleteDoc, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, onSnapshot, doc, setDoc, deleteDoc, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    /* --- PORTABLE CLOUD CONFIGURATION ---
+       If you are deploying this to GitHub Pages or any other host, 
+       you must replace the null below with your own Firebase Config object.
+       Example: 
+       const EXTERNAL_CONFIG = { apiKey: "...", authDomain: "...", projectId: "...", ... };
+    */
+    const EXTERNAL_CONFIG = {
+      apiKey: "AIzaSyCdivRAtt3b0zQpJ8LBBkFR0tdAESeJ9aQ",
+      authDomain: "hit-the-green.firebaseapp.com",
+      projectId: "hit-the-green",
+      storageBucket: "hit-the-green.firebasestorage.app",
+      messagingSenderId: "30739380232",
+      appId: "1:30739380232:web:dbad5bb990ebf35c3af9bd",
+      measurementId: "G-105NQK63ZP"
+    }; 
 
     // --- SHARED STATE ---
     let user = null;
@@ -393,15 +419,7 @@
         return n;
     };
 
-    // --- LOCAL PERSISTENCE ---
-    const STORAGE_KEY = 'htg_local_libraries';
-    const saveLocally = (libs) => localStorage.setItem(STORAGE_KEY, JSON.stringify(libs));
-    const loadLocally = () => {
-        const data = localStorage.getItem(STORAGE_KEY);
-        return data ? JSON.parse(data) : [];
-    };
-
-    // --- ATTACH INTERACTIVE FUNCTIONS TO WINDOW (TOP LEVEL) ---
+    // --- ATTACH INTERACTIVE FUNCTIONS TO WINDOW ---
     window.goToLibraryStep = () => {
         document.getElementById('setup-step-1').classList.add('hidden');
         document.getElementById('setup-step-2').classList.remove('hidden');
@@ -426,16 +444,11 @@
         document.getElementById('import-overlay').classList.add('hidden');
     };
 
-    // CHANGED: Navigates to home without reload to preserve state
     window.confirmQuit = () => {
         if (!confirm("Quit game and return to menu?")) return;
-        
-        // Reset game session data
         gameData.openedBoxes = new Set();
         gameData.scores = {};
         gameData.currentTeam = 1;
-
-        // Hide game UI and go back to Step 1
         showScreen('screen-setup');
         window.backToStep1();
     };
@@ -448,26 +461,15 @@
     };
 
     window.deleteLibrary = async (id) => {
-        if (!confirm("Are you sure you want to delete this list?")) return;
+        if (!confirm("Are you sure you want to delete this list from the CLOUD? This will affect all players.")) return;
         if (user && db) {
-            document.getElementById('loading-overlay').classList.remove('hidden');
             try {
                 await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'questionLibraries', id));
                 if (selectedLibId === id) {
                     selectedLibId = null;
                     document.getElementById('current-selection-label').innerText = "No list selected";
                 }
-                await loadLibraries();
-            } catch (e) { console.error("Delete failed", e); }
-            finally { document.getElementById('loading-overlay').classList.add('hidden'); }
-        } else {
-            savedLibraries = savedLibraries.filter(l => l.id !== id);
-            saveLocally(savedLibraries);
-            if (selectedLibId === id) {
-                selectedLibId = null;
-                document.getElementById('current-selection-label').innerText = "No list selected";
-            }
-            renderLibraryGrid();
+            } catch (e) { console.error("Cloud Delete failed", e); }
         }
     };
 
@@ -484,43 +486,33 @@
     window.saveToLibrary = async () => {
         const name = document.getElementById('library-name').value.trim();
         const content = document.getElementById('setup-import').value.trim();
-        if (!name || !content) return;
+        if (!name || !content || !user) return;
         const questions = parseQuestions(content);
         if (questions.length === 0) return;
 
-        if (user && db) {
-            document.getElementById('loading-overlay').classList.remove('hidden');
-            const libCol = collection(db, 'artifacts', appId, 'public', 'data', 'questionLibraries');
-            try {
-                if (editingId) {
-                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'questionLibraries', editingId), { name, questions, timestamp: Date.now() });
-                    selectedLibId = editingId;
-                } else {
-                    const docRef = await addDoc(libCol, { name, questions, timestamp: Date.now() });
-                    selectedLibId = docRef.id;
-                }
-                document.getElementById('current-selection-label').innerText = `Selected: ${name}`;
-                window.closeImportModal();
-                await loadLibraries();
-                window.backToStep1();
-            } catch (e) { console.error("Save failed", e); } 
-            finally { document.getElementById('loading-overlay').classList.add('hidden'); }
-        } else {
-            const id = editingId || 'local-' + Date.now();
-            const newLib = { id, name, questions, timestamp: Date.now() };
+        const libCol = collection(db, 'artifacts', appId, 'public', 'data', 'questionLibraries');
+        try {
             if (editingId) {
-                const idx = savedLibraries.findIndex(l => l.id === editingId);
-                if (idx !== -1) savedLibraries[idx] = newLib;
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'questionLibraries', editingId), { 
+                    name, 
+                    questions, 
+                    timestamp: Date.now(), 
+                    userId: user.uid 
+                });
+                selectedLibId = editingId;
             } else {
-                savedLibraries.push(newLib);
+                const docRef = await addDoc(libCol, { 
+                    name, 
+                    questions, 
+                    timestamp: Date.now(), 
+                    userId: user.uid 
+                });
+                selectedLibId = docRef.id;
             }
-            saveLocally(savedLibraries);
-            selectedLibId = id;
             document.getElementById('current-selection-label').innerText = `Selected: ${name}`;
             window.closeImportModal();
-            renderLibraryGrid();
             window.backToStep1();
-        }
+        } catch (e) { console.error("Cloud Save failed", e); alert("Error saving to cloud."); } 
     };
 
     window.showAnswer = () => {
@@ -537,13 +529,12 @@
         else { playSound('fail'); nextTurn(); }
     };
 
-    // --- LIBRARY RENDER ---
+    // --- CLOUD RENDER ---
     const renderLibraryGrid = () => {
         const grid = document.getElementById('lib-grid-container');
         if (!grid) return;
         grid.innerHTML = '';
 
-        // CHANGED: Create New List now appears first
         const importBtn = document.createElement('div');
         importBtn.className = "lib-card import-trigger";
         importBtn.innerText = "+ Create New List";
@@ -567,20 +558,6 @@
             card.onclick = () => window.selectLibrary(lib.id);
             grid.appendChild(card);
         });
-    };
-
-    const loadLibraries = async () => {
-        if (user && db) {
-            const libCol = collection(db, 'artifacts', appId, 'public', 'data', 'questionLibraries');
-            try {
-                const snap = await getDocs(libCol);
-                savedLibraries = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderLibraryGrid();
-            } catch (e) { console.error("Error loading libraries", e); }
-        } else {
-            savedLibraries = loadLocally();
-            renderLibraryGrid();
-        }
     };
 
     // --- GAME ENGINE ---
@@ -656,7 +633,7 @@
         showSubScreen('screen-grid');
     };
 
-    // --- MINI GAME LOGIC (PIXEL-PERFECT COLLISION) ---
+    // --- MINI GAME LOGIC ---
     let arrowPos = 0, arrowDir = 1, arrowActive = false, animId = null;
 
     const startMiniGame = () => {
@@ -694,12 +671,9 @@
             const widthPct = (p.w / total) * 100;
             const div = document.createElement('div');
             div.className = `segment seg-${p.type}`;
-            div.id = `segment-box-${idx}`; // Unique ID for pixel checking
             div.style.left = curX + '%';
             div.style.width = widthPct + '%';
             line.appendChild(div);
-            
-            // Still keep logical points
             gameData.segments.push({ pts: p.pts, type: p.type });
             curX += widthPct;
         });
@@ -721,26 +695,21 @@
         cancelAnimationFrame(animId);
         document.getElementById('btn-hit').disabled = true;
         
-        const arrowEl = document.getElementById('arrow');
         const marker = document.getElementById('hit-marker');
-        
-        // Final position capture
         marker.style.left = arrowPos + '%';
         marker.classList.remove('hidden');
 
-        // PIXEL PERFECT HIT DETECTION
+        const arrowEl = document.getElementById('arrow');
         const arrowRect = arrowEl.getBoundingClientRect();
         const arrowMid = arrowRect.left + (arrowRect.width / 2);
         
         let points = 0;
         let found = false;
 
-        // Iterate through rendered segments to see which one physically contains the arrow's center
         const segmentDivs = document.querySelectorAll('.segment');
         segmentDivs.forEach((div, idx) => {
             if (found) return;
             const rect = div.getBoundingClientRect();
-            // Check if arrow's center point is within the left/right bounds of this div's pixels
             if (arrowMid >= rect.left && arrowMid <= rect.right) {
                 points = gameData.segments[idx].pts;
                 found = true;
@@ -800,19 +769,72 @@
     // --- INITIALIZATION ---
     const initApp = async () => {
         try {
-            const configExists = typeof __firebase_config !== 'undefined' && __firebase_config;
-            if (configExists) {
-                const firebaseConfig = JSON.parse(__firebase_config);
-                const app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-                appId = typeof __app_id !== 'undefined' ? __app_id : 'hit-the-green-v2';
-                onAuthStateChanged(auth, (u) => { user = u; loadLibraries(); });
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else { await signInAnonymously(auth); }
-            } else { loadLibraries(); }
-        } catch (e) { console.error("Initialization Error:", e); loadLibraries(); }
+            let firebaseConfig = null;
+
+            // 1. Check for platform-injected config
+            const hasPlatformConfig = typeof __firebase_config !== 'undefined' && __firebase_config;
+            
+            if (hasPlatformConfig) {
+                firebaseConfig = JSON.parse(__firebase_config);
+            } else if (EXTERNAL_CONFIG) {
+                // 2. Check for hardcoded external config (for GitHub/etc)
+                firebaseConfig = EXTERNAL_CONFIG;
+            }
+
+            if (!firebaseConfig) {
+                throw new Error("No Firebase configuration found.");
+            }
+
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            appId = typeof __app_id !== 'undefined' ? __app_id : 'hit-the-green-global';
+            
+            // Set up listener before starting sign-in
+            onAuthStateChanged(auth, (u) => { 
+                user = u; 
+                if (u) {
+                    setupCloudSync(); 
+                }
+            });
+
+            // Rule 3: Auth first
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else { 
+                await signInAnonymously(auth); 
+            }
+
+        } catch (e) { 
+            console.error("Initialization Error:", e);
+            document.getElementById('loading-text').innerText = "Offline Mode (Cloud Unavailable)";
+            setTimeout(() => {
+                document.getElementById('loading-overlay').classList.add('hidden');
+            }, 3000);
+        }
+    };
+
+    const setupCloudSync = () => {
+        if (!user) return;
+
+        // Rule 1: Public path
+        const libCol = collection(db, 'artifacts', appId, 'public', 'data', 'questionLibraries');
+        const q = query(libCol);
+
+        // Rule 2: Simple snapshot listener
+        onSnapshot(q, (snap) => {
+            savedLibraries = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // Rule 2: Sort in memory
+            savedLibraries.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+            renderLibraryGrid();
+            document.getElementById('loading-overlay').classList.add('hidden');
+        }, (err) => {
+            console.error("Cloud Sync failed", err);
+            document.getElementById('loading-text').innerText = "Cloud Sync Issue";
+            setTimeout(() => {
+                document.getElementById('loading-overlay').classList.add('hidden');
+            }, 2000);
+        });
     };
 
     initApp();
