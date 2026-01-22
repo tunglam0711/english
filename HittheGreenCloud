@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hit the Green - Cloud Challenge</title>
+    <!-- Modern Game Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #22c55e;
+            --primary-dark: #15803d;
+            --secondary: #10b981;
+            --accent: #f59e0b;
+            --danger: #f43f5e;
+            --bg: #f0fdf4;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text-main: #064e3b;
+            --text-muted: #475569;
+            
+            --t1-color: #ff4d6d;
+            --t2-color: #0ea5e9;
+            --t3-color: #a855f7;
+            --t4-color: #fb8500;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #dcfce7 0%, #f0fdf4 100%);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 950px;
+            padding: 40px;
+            border-radius: 32px;
+            box-shadow: 0 25px 50px -12px rgba(6, 78, 59, 0.15);
+            text-align: center;
+            position: relative;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .game-title {
+            font-family: 'Luckiest Guy', cursive;
+            font-size: 5rem;
+            color: var(--primary);
+            text-shadow: 4px 4px 0px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+            background: linear-gradient(to bottom, #22c55e, #0ea5e9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        @media (max-width: 600px) {
+            .game-title { font-size: 3rem; }
+            .container { padding: 20px; }
+        }
+
+        .hidden { display: none !important; }
+
+        .setup-box {
+            text-align: left;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 10px;
+        }
+
+        .setup-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .setup-label { font-weight: 800; margin-bottom: 12px; display: block; color: var(--primary-dark); text-transform: uppercase; font-size: 0.9rem; }
+        
+        .setup-select, .setup-textarea, .setup-input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #dcfce7;
+            border-radius: 16px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            background: white;
+            transition: all 0.2s;
+        }
+        .setup-select:focus, .setup-input:focus { border-color: var(--primary); outline: none; }
+        .setup-textarea { height: 160px; resize: none; margin-bottom: 15px; }
+
+        .lib-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .lib-card {
+            background: white;
+            border: 2px solid #dcfce7;
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-weight: 700;
+            color: var(--text-main);
+            position: relative;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+
+        .lib-card:hover { transform: translateY(-5px); border-color: var(--primary); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .lib-card.active { background: #dcfce7; border-color: var(--primary); box-shadow: inset 0 0 0 2px var(--primary); }
+        
+        .lib-actions {
+            position: absolute; top: 10px; right: 10px; display: flex; gap: 8px; opacity: 0; transition: opacity 0.2s;
+        }
+        .lib-card:hover .lib-actions { opacity: 1; }
+
+        .action-btn {
+            width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: background 0.2s;
+        }
+        .btn-edit { background: #fef3c7; color: #d97706; }
+        .btn-delete { background: #fee2e2; color: #dc2626; }
+
+        .lib-card.import-trigger { border: 2px dashed var(--primary); color: var(--primary); background: transparent; font-size: 1.2rem; }
+        .lib-card.import-trigger:hover { background: #f0fdf4; }
+
+        #import-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); display: flex; justify-content: center;
+            align-items: center; z-index: 200; backdrop-filter: blur(4px);
+        }
+        .import-modal {
+            background: white; width: 95%; max-width: 600px; padding: 30px;
+            border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+        }
+
+        .quit-btn {
+            position: absolute; top: 25px; right: 25px; padding: 10px 15px;
+            font-size: 0.8rem; background: #f1f5f9; color: #94a3b8;
+            border-radius: 12px; cursor: pointer; font-weight: 800;
+            transition: all 0.2s; z-index: 100;
+        }
+        .quit-btn:hover { background: var(--danger); color: white; }
+
+        .scoreboard {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 20px; margin-bottom: 35px;
+        }
+
+        .team-card { padding: 15px; border-radius: 20px; background: white; border: 3px solid #f1f5f9; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .team-card.active { transform: scale(1.1); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); border-color: currentColor; }
+        .team-name { font-size: 0.9rem; font-weight: 800; text-transform: uppercase; margin-bottom: 4px; }
+        .team-score { font-size: 2.2rem; font-weight: 800; }
+        
+        .t1 { color: var(--t1-color); } .t2 { color: var(--t2-color); } .t3 { color: var(--t3-color); } .t4 { color: var(--t4-color); }
+
+        .box-grid { display: grid; gap: 15px; margin-bottom: 25px; }
+        .box {
+            aspect-ratio: 1/1; background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white; display: flex; align-items: center; justify-content: center;
+            font-size: 2.2rem; font-weight: 800; border-radius: 18px;
+            cursor: pointer; transition: all 0.2s ease; box-shadow: 0 6px 0 #14532d;
+        }
+        .box:hover:not(.opened) { transform: translateY(-5px); box-shadow: 0 12px 0 #14532d; filter: brightness(1.1); }
+        .box.opened { background: #e2e8f0 !important; color: #94a3b8; box-shadow: none !important; cursor: default; }
+
+        .game-area { background: #ffffff; padding: 80px 40px; border-radius: 32px; position: relative; margin: 30px 0; overflow: hidden; border: 4px solid #f1f5f9; }
+        
+        .point-line { 
+            height: 75px; 
+            width: 100%; 
+            display: block; 
+            border-radius: 40px; 
+            overflow: hidden; 
+            position: relative; 
+            border: 4px solid #1e293b; 
+            background: #f1f5f9; 
+        }
+        
+        .segment { 
+            height: 100%; 
+            position: absolute; 
+            top: 0;
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            color: white; 
+            font-size: 1.1rem; 
+            font-weight: 900; 
+        }
+        
+        .seg-red { background: #ff595e; } 
+        .seg-orange { background: #ffca3a; } 
+        .seg-blue { background: #1982c4; } 
+        .seg-green { background: #8ac926; border: 4px solid white; box-sizing: border-box; box-shadow: 0 0 15px rgba(138, 201, 38, 0.5); }
+        
+        .arrow { position: absolute; top: -15px; width: 8px; height: 105px; background: #000; transform: translateX(-50%); z-index: 25; border-radius: 4px; box-shadow: 0 0 10px rgba(0,0,0,0.3); pointer-events: none; }
+        
+        .hit-marker { position: absolute; top: 0; width: 4px; height: 100%; background: #ffffff; z-index: 20; transform: translateX(-50%); opacity: 0.9; }
+
+        .point-legend { display: flex; justify-content: center; gap: 20px; margin-top: 25px; padding: 15px; background: #f0fdf4; border-radius: 20px; border: 1px dashed #22c55e; flex-wrap: wrap; }
+        .legend-item { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 1rem; color: #166534; }
+        .legend-color { width: 18px; height: 18px; border-radius: 4px; }
+
+        .btn-group { display: flex; gap: 16px; justify-content: center; margin-top: 30px; flex-wrap: wrap; }
+        button { padding: 16px 32px; font-size: 1.1rem; font-weight: 800; border: none; border-radius: 20px; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 10px; }
+        .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-danger { background: #f43f5e; color: white; }
+        .btn-ghost { background: #f1f5f9; color: var(--text-muted); }
+        .btn-hit { width: 100%; justify-content: center; background: #1e293b; color: #fff; font-size: 2.2rem; padding: 25px; margin-top: 25px; text-transform: uppercase; font-family: 'Luckiest Guy', cursive; }
+
+        .feedback { font-size: 3.5rem; font-weight: 900; margin-top: 25px; height: 4rem; text-transform: uppercase; }
+
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; font-weight: 800; color: var(--primary-dark); }
+        .spinner { border: 4px solid rgba(0,0,0,0.1); width: 40px; height: 40px; border-radius: 50%; border-left-color: var(--primary); animation: spin 1s linear infinite; margin-bottom: 10px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        #current-selection-label { font-weight: 600; color: var(--primary-dark); margin-bottom: 20px; background: #dcfce7; padding: 10px 15px; border-radius: 12px; display: inline-block; }
+    </style>
+</head>
+<body>
+
+<div id="loading-overlay">
+    <div class="spinner"></div>
+    <div id="loading-text">Syncing with Cloud...</div>
+</div>
+
+<div class="container">
+    <!-- Setup Screen -->
+    <div id="screen-setup">
+        <div class="game-title">Hit the green</div>
+        
+        <div id="setup-step-1" class="setup-box">
+            <div class="setup-row">
+                <div>
+                    <label class="setup-label">Number of Teams</label>
+                    <select id="setup-teams" class="setup-select">
+                        <option value="1">1 Team</option>
+                        <option value="2" selected>2 Teams</option>
+                        <option value="3">3 Teams</option>
+                        <option value="4">4 Teams</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="setup-label">Difficulty Level</label>
+                    <select id="setup-difficulty" class="setup-select">
+                        <option value="easy">Easy</option>
+                        <option value="hard">Hard</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-bottom: 10px;">
+                <div id="current-selection-label">No list selected</div><br>
+                <button class="btn-ghost" onclick="goToLibraryStep()" style="font-size: 1rem; padding: 12px 24px;">Choose Question List</button>
+            </div>
+            
+            <button id="btn-start" class="btn-primary" style="width: 100%; justify-content: center; padding: 20px; font-size: 1.5rem; margin-top: 20px;" onclick="startGame()">LET'S PLAY!</button>
+        </div>
+
+        <div id="setup-step-2" class="setup-box hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <label class="setup-label" style="margin: 0;">Cloud Library</label>
+                <button class="btn-ghost" onclick="backToStep1()" style="padding: 8px 16px;">Back to Setup</button>
+            </div>
+            <div class="lib-grid" id="lib-grid-container"></div>
+        </div>
+    </div>
+
+    <!-- Manual Import Modal -->
+    <div id="import-overlay" class="hidden">
+        <div class="import-modal">
+            <label id="modal-title" class="setup-label">Import & Save Questions</label>
+            <textarea id="setup-import" class="setup-textarea" placeholder="Question 1>Answer 1&#10;Question 2>Answer 2"></textarea>
+            <input type="text" id="library-name" class="setup-input" placeholder="Library Name (e.g. Unit 5 Vocabulary)" style="margin-bottom: 20px;">
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-ghost" onclick="closeImportModal()" style="flex: 1; justify-content: center;">Cancel</button>
+                <button class="btn-success" onclick="saveToLibrary()" style="flex: 1; justify-content: center;">Save to Cloud</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game UI -->
+    <div id="game-ui" class="hidden">
+        <div class="quit-btn" onclick="confirmQuit()">QUIT TO HOME</div>
+        <div id="screen-grid">
+            <div id="main-scoreboard" class="scoreboard"></div>
+            <p id="turn-display" style="font-weight: 800; color: var(--text-muted); font-size: 1.2rem; margin-bottom: 25px; text-transform: uppercase;"></p>
+            <div class="box-grid" id="box-container"></div>
+        </div>
+
+        <div id="screen-question" class="hidden">
+            <div id="q-header" style="font-weight: 800; font-size: 1.5rem; color: var(--primary-dark);">BOX 01</div>
+            <div style="background: #f8fafc; padding: 40px; border-radius: 28px; margin: 25px 0; border: 2px solid #dcfce7;">
+                <div id="q-text" style="font-size: 1.8rem; font-weight: 600; color: #064e3b;"></div>
+                <div id="ans-container" class="hidden" style="margin-top: 30px; padding: 25px; background: #ecfdf5; border-radius: 20px; color: #065f46; font-weight: 700; text-align: left; border: 3px solid #10b981;">
+                    <div id="q-ans" style="font-size: 1.4rem;"></div>
+                </div>
+            </div>
+            <div id="q-controls-initial" class="btn-group">
+                <button class="btn-ghost" onclick="cancelQuestion()">Go Back</button>
+                <button class="btn-primary" onclick="showAnswer()">Show Answer</button>
+            </div>
+            <div id="q-controls-result" class="btn-group hidden">
+                <button class="btn-danger" onclick="handleResult(false)">Wrong ✗</button>
+                <button class="btn-success" onclick="handleResult(true)">Got it Right ✓</button>
+            </div>
+        </div>
+
+        <div id="screen-points" class="hidden">
+            <h2 style="font-weight: 800; color: #1e293b; text-transform: uppercase;">Hit the Green!</h2>
+            <div class="game-area">
+                <div class="point-line" id="point-line"></div>
+                <div id="hit-marker" class="hit-marker hidden"></div>
+                <div class="arrow" id="arrow"></div>
+                <div class="point-legend">
+                    <div class="legend-item"><div class="legend-color seg-red"></div> 0 Pts</div>
+                    <div class="legend-item"><div class="legend-color seg-orange"></div> 1 Pt</div>
+                    <div class="legend-item"><div class="legend-color seg-blue"></div> 2 Pts</div>
+                    <div class="legend-item"><div class="legend-color seg-green"></div> 5 Pts</div>
+                </div>
+            </div>
+            <button class="btn-hit" id="btn-hit" onclick="stopArrow()">H I T !</button>
+            <div id="point-feedback" class="feedback"></div>
+        </div>
+    </div>
+
+    <!-- Results Screen -->
+    <div id="screen-winner" class="hidden">
+        <div style="font-size: 6rem; margin-bottom: 10px;">🏆</div>
+        <h1 id="winner-text" style="font-family: 'Luckiest Guy', cursive; font-size: 4rem; color: var(--accent);">TEAM 1 WINS!</h1>
+        <div id="final-scoreboard" class="scoreboard" style="max-width: 700px; margin: 0 auto 40px;"></div>
+        <button class="btn-primary" style="padding: 20px 40px;" onclick="confirmQuit()">Back to Setup</button>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, onSnapshot, doc, setDoc, deleteDoc, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // --- SHARED STATE ---
+    let user = null;
+    let savedLibraries = [];
+    let selectedLibId = null;
+    let editingId = null;
+    let auth, db, appId;
+
+    // --- CORE GAME DATA ---
+    let gameData = {
+        questions: [], teams: 2, difficulty: 'easy', scores: {},
+        currentTeam: 1, openedBoxes: new Set(), currentQuestionIdx: -1, segments: []
+    };
+
+    // --- UI HELPERS ---
+    const showScreen = (id) => {
+        ['screen-setup', 'game-ui', 'screen-winner'].forEach(s => document.getElementById(s).classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
+    };
+    const showSubScreen = (id) => {
+        ['screen-grid', 'screen-question', 'screen-points'].forEach(s => document.getElementById(s).classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
+    };
+
+    const parseQuestions = (text) => {
+        return text.split('\n').filter(l => l.includes('>')).map(l => {
+            const [q, a] = l.split('>');
+            return { q: q.trim(), a: a.trim() };
+        }).filter(q => q.q && q.a);
+    };
+
+    const getBestColumns = (n) => {
+        if (n <= 3) return n;
+        if (n === 10) return 5;
+        let cols = Math.ceil(Math.sqrt(n));
+        for (let i = cols; i <= n; i++) if (n % i === 0) return i;
+        return n;
+    };
+
+    // --- ATTACH INTERACTIVE FUNCTIONS TO WINDOW ---
+    window.goToLibraryStep = () => {
+        document.getElementById('setup-step-1').classList.add('hidden');
+        document.getElementById('setup-step-2').classList.remove('hidden');
+    };
+
+    window.backToStep1 = () => {
+        document.getElementById('setup-step-2').classList.add('hidden');
+        document.getElementById('setup-step-1').classList.remove('hidden');
+    };
+
+    window.openImportModal = () => {
+        if (!editingId) {
+            document.getElementById('modal-title').innerText = "Import & Save Questions";
+            document.getElementById('library-name').value = '';
+            document.getElementById('setup-import').value = '';
+        }
+        document.getElementById('import-overlay').classList.remove('hidden');
+    };
+
+    window.closeImportModal = () => {
+        editingId = null;
+        document.getElementById('import-overlay').classList.add('hidden');
+    };
+
+    window.confirmQuit = () => {
+        if (!confirm("Quit game and return to menu?")) return;
+        gameData.openedBoxes = new Set();
+        gameData.scores = {};
+        gameData.currentTeam = 1;
+        showScreen('screen-setup');
+        window.backToStep1();
+    };
+
+    window.selectLibrary = (id) => {
+        selectedLibId = id;
+        const found = savedLibraries.find(l => l.id === id);
+        document.getElementById('current-selection-label').innerText = found ? `Selected: ${found.name}` : "No list selected";
+        window.backToStep1();
+    };
+
+    window.deleteLibrary = async (id) => {
+        if (!confirm("Are you sure you want to delete this list from the CLOUD? This will affect all players.")) return;
+        if (user && db) {
+            try {
+                // Rule 1: Correct collection path
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'questionLibraries', id));
+                if (selectedLibId === id) {
+                    selectedLibId = null;
+                    document.getElementById('current-selection-label').innerText = "No list selected";
+                }
+            } catch (e) { console.error("Cloud Delete failed", e); }
+        }
+    };
+
+    window.editLibrary = (id) => {
+        const lib = savedLibraries.find(l => l.id === id);
+        if (!lib) return;
+        editingId = id;
+        document.getElementById('modal-title').innerText = "Edit Question Set";
+        document.getElementById('library-name').value = lib.name;
+        document.getElementById('setup-import').value = lib.questions.map(q => `${q.q}>${q.a}`).join('\n');
+        window.openImportModal();
+    };
+
+    window.saveToLibrary = async () => {
+        const name = document.getElementById('library-name').value.trim();
+        const content = document.getElementById('setup-import').value.trim();
+        if (!name || !content || !user) return;
+        const questions = parseQuestions(content);
+        if (questions.length === 0) return;
+
+        // Rule 1 & 3: Database path and Auth check
+        const libCol = collection(db, 'artifacts', appId, 'public', 'data', 'questionLibraries');
+        try {
+            if (editingId) {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'questionLibraries', editingId), { name, questions, timestamp: Date.now(), userId: user.uid });
+                selectedLibId = editingId;
+            } else {
+                const docRef = await addDoc(libCol, { name, questions, timestamp: Date.now(), userId: user.uid });
+                selectedLibId = docRef.id;
+            }
+            document.getElementById('current-selection-label').innerText = `Selected: ${name}`;
+            window.closeImportModal();
+            window.backToStep1();
+        } catch (e) { console.error("Cloud Save failed", e); alert("Error saving to cloud."); } 
+    };
+
+    window.showAnswer = () => {
+        document.getElementById('ans-container').classList.remove('hidden');
+        document.getElementById('q-controls-initial').classList.add('hidden');
+        document.getElementById('q-controls-result').classList.remove('hidden');
+    };
+
+    window.cancelQuestion = () => showSubScreen('screen-grid');
+
+    window.handleResult = (correct) => {
+        gameData.openedBoxes.add(gameData.currentQuestionIdx);
+        if (correct) { playSound('success'); startMiniGame(); }
+        else { playSound('fail'); nextTurn(); }
+    };
+
+    // --- CLOUD RENDER ---
+    const renderLibraryGrid = () => {
+        const grid = document.getElementById('lib-grid-container');
+        if (!grid) return;
+        grid.innerHTML = '';
+
+        const importBtn = document.createElement('div');
+        importBtn.className = "lib-card import-trigger";
+        importBtn.innerText = "+ Create New List";
+        importBtn.onclick = window.openImportModal;
+        grid.appendChild(importBtn);
+
+        savedLibraries.forEach(lib => {
+            const card = document.createElement('div');
+            card.className = `lib-card ${selectedLibId === lib.id ? 'active' : ''}`;
+            card.innerHTML = `
+                <span>${lib.name}</span>
+                <div class="lib-actions">
+                    <div class="action-btn btn-edit" onclick="event.stopPropagation(); window.editLibrary('${lib.id}')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    </div>
+                    <div class="action-btn btn-delete" onclick="event.stopPropagation(); window.deleteLibrary('${lib.id}')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </div>
+                </div>
+            `;
+            card.onclick = () => window.selectLibrary(lib.id);
+            grid.appendChild(card);
+        });
+    };
+
+    // --- GAME ENGINE ---
+    window.startGame = () => {
+        if (!selectedLibId) {
+            alert("Please choose a question list first!");
+            window.goToLibraryStep();
+            return;
+        }
+        const found = savedLibraries.find(l => l.id === selectedLibId);
+        if (!found || !found.questions.length) return;
+        const teamSelect = document.getElementById('setup-teams');
+        const diffSelect = document.getElementById('setup-difficulty');
+        gameData.teams = parseInt(teamSelect.value);
+        gameData.difficulty = diffSelect.value;
+        const source = found.questions;
+        const finalCount = source.length - (source.length % gameData.teams);
+        gameData.questions = source.slice(0, finalCount);
+        gameData.scores = {};
+        gameData.openedBoxes = new Set();
+        gameData.currentTeam = 1;
+        for (let i = 1; i <= gameData.teams; i++) gameData.scores[i] = 0;
+        showScreen('game-ui');
+        initBoard();
+    };
+
+    const initBoard = () => {
+        const board = document.getElementById('box-container');
+        const n = gameData.questions.length;
+        const cols = getBestColumns(n);
+        board.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+        board.innerHTML = '';
+        gameData.questions.forEach((_, idx) => {
+            const box = document.createElement('div');
+            box.className = `box ${gameData.openedBoxes.has(idx) ? 'opened' : ''}`;
+            box.innerText = idx + 1;
+            box.onclick = () => window.openQuestion(idx);
+            board.appendChild(box);
+        });
+        updateUI();
+    };
+
+    const updateUI = () => {
+        const sb = document.getElementById('main-scoreboard');
+        sb.innerHTML = '';
+        for (let i = 1; i <= gameData.teams; i++) {
+            const card = document.createElement('div');
+            card.className = `team-card t${i} ${gameData.currentTeam === i ? 'active' : ''}`;
+            card.style.borderColor = `var(--t${i}-color)`;
+            card.innerHTML = `<div class="team-name">Team ${i}</div><div class="team-score">${gameData.scores[i]}</div>`;
+            sb.appendChild(card);
+        }
+        document.getElementById('turn-display').innerText = `TEAM ${gameData.currentTeam}'S TURN!`;
+        if (gameData.openedBoxes.size === gameData.questions.length && gameData.questions.length > 0) setTimeout(endGame, 1500);
+    };
+
+    window.openQuestion = (idx) => {
+        if (gameData.openedBoxes.has(idx)) return;
+        gameData.currentQuestionIdx = idx;
+        showSubScreen('screen-question');
+        document.getElementById('q-header').innerText = `BOX ${idx + 1}`;
+        document.getElementById('q-text').innerText = gameData.questions[idx].q;
+        document.getElementById('q-ans').innerText = gameData.questions[idx].a;
+        document.getElementById('ans-container').classList.add('hidden');
+        document.getElementById('q-controls-initial').classList.remove('hidden');
+        document.getElementById('q-controls-result').classList.add('hidden');
+    };
+
+    const nextTurn = () => {
+        gameData.currentTeam = (gameData.currentTeam % gameData.teams) + 1;
+        updateUI();
+        initBoard();
+        showSubScreen('screen-grid');
+    };
+
+    // --- MINI GAME LOGIC ---
+    let arrowPos = 0, arrowDir = 1, arrowActive = false, animId = null;
+
+    const startMiniGame = () => {
+        showSubScreen('screen-points');
+        document.getElementById('point-feedback').innerText = '';
+        document.getElementById('hit-marker').classList.add('hidden');
+        document.getElementById('btn-hit').disabled = false;
+        generateSegments();
+        arrowPos = 0; arrowDir = 1; arrowActive = true;
+        runGameLoop();
+    };
+
+    const generateSegments = () => {
+        const line = document.getElementById('point-line');
+        line.innerHTML = '';
+        const getW = (min, max) => Math.random() * (max - min) + min;
+        
+        const wGreen = getW(4.5, 6.0);
+        const wBlueL = getW(2, 25), wBlueR = getW(2, 25);
+        const wOrangeL = getW(5, 50), wOrangeR = getW(5, 50);
+        const wRedL = getW(10, 80), wRedR = getW(10, 80);
+        
+        const pattern = [
+            { type: 'red', pts: 0, w: wRedL }, { type: 'orange', pts: 1, w: wOrangeL },
+            { type: 'blue', pts: 2, w: wBlueL }, { type: 'green', pts: 5, w: wGreen },
+            { type: 'blue', pts: 2, w: wBlueR }, { type: 'orange', pts: 1, w: wOrangeR },
+            { type: 'red', pts: 0, w: wRedR }
+        ];
+
+        const total = pattern.reduce((acc, curr) => acc + curr.w, 0);
+        gameData.segments = [];
+        let curX = 0;
+        
+        pattern.forEach((p, idx) => {
+            const widthPct = (p.w / total) * 100;
+            const div = document.createElement('div');
+            div.className = `segment seg-${p.type}`;
+            div.style.left = curX + '%';
+            div.style.width = widthPct + '%';
+            line.appendChild(div);
+            gameData.segments.push({ pts: p.pts, type: p.type });
+            curX += widthPct;
+        });
+    };
+
+    const runGameLoop = () => {
+        if (!arrowActive) return;
+        const speed = gameData.difficulty === 'hard' ? 5.8 : 2.8;
+        arrowPos += speed * arrowDir;
+        if (arrowPos >= 100) { arrowPos = 100; arrowDir = -1; }
+        if (arrowPos <= 0) { arrowPos = 0; arrowDir = 1; }
+        document.getElementById('arrow').style.left = arrowPos + '%';
+        animId = requestAnimationFrame(runGameLoop);
+    };
+
+    window.stopArrow = () => {
+        if (!arrowActive) return;
+        arrowActive = false;
+        cancelAnimationFrame(animId);
+        document.getElementById('btn-hit').disabled = true;
+        
+        const marker = document.getElementById('hit-marker');
+        marker.style.left = arrowPos + '%';
+        marker.classList.remove('hidden');
+
+        const arrowEl = document.getElementById('arrow');
+        const arrowRect = arrowEl.getBoundingClientRect();
+        const arrowMid = arrowRect.left + (arrowRect.width / 2);
+        
+        let points = 0;
+        let found = false;
+
+        const segmentDivs = document.querySelectorAll('.segment');
+        segmentDivs.forEach((div, idx) => {
+            if (found) return;
+            const rect = div.getBoundingClientRect();
+            if (arrowMid >= rect.left && arrowMid <= rect.right) {
+                points = gameData.segments[idx].pts;
+                found = true;
+            }
+        });
+
+        gameData.scores[gameData.currentTeam] += points;
+        const fb = document.getElementById('point-feedback');
+        if (points === 5) { playSound('hit'); fb.innerText = "JACKPOT! +5"; fb.style.color = "var(--secondary)"; }
+        else if (points > 0) { playSound('success'); fb.innerText = `GOOD! +${points}`; fb.style.color = "var(--accent)"; }
+        else { playSound('fail'); fb.innerText = "MISSED!"; fb.style.color = "var(--danger)"; }
+        setTimeout(nextTurn, 2200);
+    };
+
+    const endGame = () => {
+        showScreen('screen-winner');
+        let max = -1, winners = [];
+        for (let i = 1; i <= gameData.teams; i++) {
+            if (gameData.scores[i] > max) { max = gameData.scores[i]; winners = [i]; }
+            else if (gameData.scores[i] === max) winners.push(i);
+        }
+        document.getElementById('winner-text').innerText = winners.length > 1 ? "IT'S A TIE!" : `TEAM ${winners[0]} WINS!`;
+        const fs = document.getElementById('final-scoreboard');
+        fs.innerHTML = '';
+        for (let i = 1; i <= gameData.teams; i++) {
+            const card = document.createElement('div');
+            card.className = `team-card t${i}`;
+            card.style.borderColor = `var(--t${i}-color)`;
+            card.innerHTML = `<div class="team-name">Team ${i}</div><div class="team-score">${gameData.scores[i]}</div>`;
+            fs.appendChild(card);
+        }
+    };
+
+    function playSound(type) {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+            if (type === 'success') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(440, now); osc.frequency.exponentialRampToValueAtTime(880, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(); osc.stop(now + 0.2);
+            } else if (type === 'fail') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now); osc.frequency.linearRampToValueAtTime(80, now + 0.3);
+                gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                osc.start(); osc.stop(now + 0.3);
+            } else if (type === 'hit') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(600, now);
+                gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(); osc.stop(now + 0.2);
+            }
+        } catch(e) {}
+    }
+
+    // --- INITIALIZATION ---
+    const initApp = async () => {
+        try {
+            const firebaseConfig = JSON.parse(__firebase_config);
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            appId = typeof __app_id !== 'undefined' ? __app_id : 'hit-the-green-global';
+            
+            // Rule 3: Auth first
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else { 
+                await signInAnonymously(auth); 
+            }
+
+            onAuthStateChanged(auth, (u) => { 
+                user = u; 
+                if (u) setupCloudSync(); 
+            });
+
+        } catch (e) { 
+            console.error("Initialization Error:", e);
+            document.getElementById('loading-text').innerText = "Offline Mode (Cloud Unavailable)";
+            setTimeout(() => document.getElementById('loading-overlay').classList.add('hidden'), 2000);
+        }
+    };
+
+    const setupCloudSync = () => {
+        // Rule 1 & 2: Public path and Simple listener
+        const libCol = collection(db, 'artifacts', appId, 'public', 'data', 'questionLibraries');
+        const q = query(libCol);
+
+        onSnapshot(q, (snap) => {
+            savedLibraries = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // Rule 2: Sort in memory
+            savedLibraries.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+            renderLibraryGrid();
+            document.getElementById('loading-overlay').classList.add('hidden');
+        }, (err) => {
+            console.error("Cloud Sync failed", err);
+            document.getElementById('loading-overlay').classList.add('hidden');
+        });
+    };
+
+    initApp();
+</script>
+
+</body>
+</html>
