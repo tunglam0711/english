@@ -248,7 +248,7 @@
 
 <div id="loading-overlay">
     <div class="spinner"></div>
-    <div id="loading-text">Syncing with Cloud...</div>
+    <div id="loading-text">Connecting to Cloud...</div>
 </div>
 
 <div class="container">
@@ -448,7 +448,6 @@
         if (!confirm("Are you sure you want to delete this list from the CLOUD? This will affect all players.")) return;
         if (user && db) {
             try {
-                // Rule 1: Correct collection path
                 await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'questionLibraries', id));
                 if (selectedLibId === id) {
                     selectedLibId = null;
@@ -475,14 +474,23 @@
         const questions = parseQuestions(content);
         if (questions.length === 0) return;
 
-        // Rule 1 & 3: Database path and Auth check
         const libCol = collection(db, 'artifacts', appId, 'public', 'data', 'questionLibraries');
         try {
             if (editingId) {
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'questionLibraries', editingId), { name, questions, timestamp: Date.now(), userId: user.uid });
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'questionLibraries', editingId), { 
+                    name, 
+                    questions, 
+                    timestamp: Date.now(), 
+                    userId: user.uid 
+                });
                 selectedLibId = editingId;
             } else {
-                const docRef = await addDoc(libCol, { name, questions, timestamp: Date.now(), userId: user.uid });
+                const docRef = await addDoc(libCol, { 
+                    name, 
+                    questions, 
+                    timestamp: Date.now(), 
+                    userId: user.uid 
+                });
                 selectedLibId = docRef.id;
             }
             document.getElementById('current-selection-label').innerText = `Selected: ${name}`;
@@ -745,12 +753,25 @@
     // --- INITIALIZATION ---
     const initApp = async () => {
         try {
+            // Check if environment variables are available
+            if (typeof __firebase_config === 'undefined') {
+                throw new Error("Missing Firebase configuration.");
+            }
+
             const firebaseConfig = JSON.parse(__firebase_config);
             const app = initializeApp(firebaseConfig);
             auth = getAuth(app);
             db = getFirestore(app);
             appId = typeof __app_id !== 'undefined' ? __app_id : 'hit-the-green-global';
             
+            // Set up listener before starting sign-in
+            onAuthStateChanged(auth, (u) => { 
+                user = u; 
+                if (u) {
+                    setupCloudSync(); 
+                }
+            });
+
             // Rule 3: Auth first
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                 await signInWithCustomToken(auth, __initial_auth_token);
@@ -758,23 +779,24 @@
                 await signInAnonymously(auth); 
             }
 
-            onAuthStateChanged(auth, (u) => { 
-                user = u; 
-                if (u) setupCloudSync(); 
-            });
-
         } catch (e) { 
             console.error("Initialization Error:", e);
             document.getElementById('loading-text').innerText = "Offline Mode (Cloud Unavailable)";
-            setTimeout(() => document.getElementById('loading-overlay').classList.add('hidden'), 2000);
+            // Hide overlay after a delay so user can read error
+            setTimeout(() => {
+                document.getElementById('loading-overlay').classList.add('hidden');
+            }, 3000);
         }
     };
 
     const setupCloudSync = () => {
-        // Rule 1 & 2: Public path and Simple listener
+        if (!user) return;
+
+        // Rule 1: Public path
         const libCol = collection(db, 'artifacts', appId, 'public', 'data', 'questionLibraries');
         const q = query(libCol);
 
+        // Rule 2: Simple snapshot listener
         onSnapshot(q, (snap) => {
             savedLibraries = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             // Rule 2: Sort in memory
@@ -783,7 +805,10 @@
             document.getElementById('loading-overlay').classList.add('hidden');
         }, (err) => {
             console.error("Cloud Sync failed", err);
-            document.getElementById('loading-overlay').classList.add('hidden');
+            document.getElementById('loading-text').innerText = "Cloud Sync Issue";
+            setTimeout(() => {
+                document.getElementById('loading-overlay').classList.add('hidden');
+            }, 2000);
         });
     };
 
