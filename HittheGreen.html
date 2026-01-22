@@ -190,7 +190,7 @@
         .point-line { 
             height: 75px; 
             width: 100%; 
-            display: block; /* Absolute children need block/relative parent */
+            display: block; 
             border-radius: 40px; 
             overflow: hidden; 
             position: relative; 
@@ -200,7 +200,7 @@
         
         .segment { 
             height: 100%; 
-            position: absolute; /* Absolute positioning for sub-pixel accuracy */
+            position: absolute; 
             top: 0;
             display: flex; 
             align-items: center; 
@@ -401,7 +401,7 @@
         return data ? JSON.parse(data) : [];
     };
 
-    // --- ATTACH INTERACTIVE FUNCTIONS TO WINDOW ---
+    // --- ATTACH INTERACTIVE FUNCTIONS TO WINDOW (TOP LEVEL) ---
     window.goToLibraryStep = () => {
         document.getElementById('setup-step-1').classList.add('hidden');
         document.getElementById('setup-step-2').classList.remove('hidden');
@@ -641,7 +641,7 @@
         showSubScreen('screen-grid');
     };
 
-    // --- MINI GAME LOGIC (ABSOLUTE PRECISION) ---
+    // --- MINI GAME LOGIC (PIXEL-PERFECT COLLISION) ---
     let arrowPos = 0, arrowDir = 1, arrowActive = false, animId = null;
 
     const startMiniGame = () => {
@@ -675,15 +675,17 @@
         gameData.segments = [];
         let curX = 0;
         
-        pattern.forEach(p => {
+        pattern.forEach((p, idx) => {
             const widthPct = (p.w / total) * 100;
             const div = document.createElement('div');
             div.className = `segment seg-${p.type}`;
-            // Use absolute positioning for visual precision
+            div.id = `segment-box-${idx}`; // Unique ID for pixel checking
             div.style.left = curX + '%';
             div.style.width = widthPct + '%';
             line.appendChild(div);
-            gameData.segments.push({ start: curX, end: curX + widthPct, pts: p.pts });
+            
+            // Still keep logical points
+            gameData.segments.push({ pts: p.pts, type: p.type });
             curX += widthPct;
         });
     };
@@ -704,20 +706,31 @@
         cancelAnimationFrame(animId);
         document.getElementById('btn-hit').disabled = true;
         
-        // Show hit marker at EXACT arrowPos
+        const arrowEl = document.getElementById('arrow');
         const marker = document.getElementById('hit-marker');
+        
+        // Final position capture
         marker.style.left = arrowPos + '%';
         marker.classList.remove('hidden');
 
+        // PIXEL PERFECT HIT DETECTION
+        const arrowRect = arrowEl.getBoundingClientRect();
+        const arrowMid = arrowRect.left + (arrowRect.width / 2);
+        
         let points = 0;
-        // Check bounds with a small epsilon to fix sub-pixel floating point math
-        const epsilon = 0.0001;
-        for (let s of gameData.segments) {
-            if (arrowPos >= (s.start - epsilon) && arrowPos <= (s.end + epsilon)) {
-                points = s.pts;
-                break;
+        let found = false;
+
+        // Iterate through rendered segments to see which one physically contains the arrow's center
+        const segmentDivs = document.querySelectorAll('.segment');
+        segmentDivs.forEach((div, idx) => {
+            if (found) return;
+            const rect = div.getBoundingClientRect();
+            // Check if arrow's center point is within the left/right bounds of this div's pixels
+            if (arrowMid >= rect.left && arrowMid <= rect.right) {
+                points = gameData.segments[idx].pts;
+                found = true;
             }
-        }
+        });
 
         gameData.scores[gameData.currentTeam] += points;
         const fb = document.getElementById('point-feedback');
