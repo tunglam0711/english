@@ -319,7 +319,7 @@
             </div>
             <div id="q-controls-result" class="btn-group hidden">
                 <button class="btn-danger" onclick="handleResult(false)">Wrong ✗</button>
-                <button class="btn-success" onclick="handleResult(true)">Correct ✓</button>
+                <button class="btn-success" onclick="handleResult(true)">Got it Right ✓</button>
             </div>
         </div>
 
@@ -426,7 +426,19 @@
         document.getElementById('import-overlay').classList.add('hidden');
     };
 
-    window.confirmQuit = () => location.reload();
+    // CHANGED: Navigates to home without reload to preserve state
+    window.confirmQuit = () => {
+        if (!confirm("Quit game and return to menu?")) return;
+        
+        // Reset game session data
+        gameData.openedBoxes = new Set();
+        gameData.scores = {};
+        gameData.currentTeam = 1;
+
+        // Hide game UI and go back to Step 1
+        showScreen('screen-setup');
+        window.backToStep1();
+    };
 
     window.selectLibrary = (id) => {
         selectedLibId = id;
@@ -530,6 +542,14 @@
         const grid = document.getElementById('lib-grid-container');
         if (!grid) return;
         grid.innerHTML = '';
+
+        // CHANGED: Create New List now appears first
+        const importBtn = document.createElement('div');
+        importBtn.className = "lib-card import-trigger";
+        importBtn.innerText = "+ Create New List";
+        importBtn.onclick = window.openImportModal;
+        grid.appendChild(importBtn);
+
         savedLibraries.forEach(lib => {
             const card = document.createElement('div');
             card.className = `lib-card ${selectedLibId === lib.id ? 'active' : ''}`;
@@ -547,11 +567,6 @@
             card.onclick = () => window.selectLibrary(lib.id);
             grid.appendChild(card);
         });
-        const importBtn = document.createElement('div');
-        importBtn.className = "lib-card import-trigger";
-        importBtn.innerText = "+ Create New List";
-        importBtn.onclick = window.openImportModal;
-        grid.appendChild(importBtn);
     };
 
     const loadLibraries = async () => {
