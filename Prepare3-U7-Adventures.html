@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adventure Quest: 20 Questions</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f0f4f8;
+            color: #1a202c;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .timer-bar {
+            transition: width 1s linear;
+        }
+
+        .shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        .mic-pulse {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+
+        /* Custom scrollbar for the results list */
+        .results-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .results-list::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="game-container" class="w-full max-w-xl">
+        <!-- Start Screen -->
+        <div id="start-screen" class="glass-card p-8 rounded-3xl shadow-2xl text-center">
+            <div class="mb-6 inline-flex p-4 bg-blue-100 text-blue-600 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <h1 class="text-3xl font-bold mb-4">Adventure Quest</h1>
+            <p class="text-gray-600 mb-8 italic">20 questions, 40 seconds each!</p>
+            
+            <button id="start-btn" onclick="requestPermissionAndStart()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition transform active:scale-95 shadow-lg flex items-center justify-center space-x-2 mb-4">
+                <span>Start New Quest</span>
+            </button>
+
+            <!-- Results List Button -->
+            <button onclick="openResultsList()" class="w-full bg-white border-2 border-blue-100 text-blue-600 font-bold py-3 rounded-xl hover:bg-blue-50 transition shadow-sm">
+                View Student Results
+            </button>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="quiz-screen" class="hidden glass-card p-6 md:p-8 rounded-3xl shadow-2xl relative overflow-hidden">
+            <div class="flex justify-between items-center mb-6">
+                <span id="progress-text" class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Question 1/20</span>
+                <div class="flex items-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span id="timer-text" class="font-mono font-bold text-orange-600 text-lg">40</span>
+                </div>
+            </div>
+            
+            <div class="w-full bg-gray-100 h-2 rounded-full mb-8">
+                <div id="timer-bar" class="timer-bar bg-orange-500 h-2 rounded-full w-full"></div>
+            </div>
+
+            <div id="question-container" class="mb-8">
+                <div id="question-type" class="text-xs font-bold text-blue-500 mb-2 uppercase tracking-widest">Multiple Choice</div>
+                <h2 id="question-text" class="text-2xl font-bold leading-tight"></h2>
+            </div>
+
+            <div id="interaction-area"></div>
+            <div id="feedback" class="mt-4 h-6 text-center font-semibold text-sm"></div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="hidden glass-card p-8 rounded-3xl shadow-2xl text-center">
+            <h2 class="text-3xl font-bold mb-2">Quest Complete!</h2>
+            <div id="final-score" class="text-5xl font-black text-blue-600 mb-6">0/20</div>
+            
+            <div id="save-section" class="mb-8">
+                <p class="text-gray-600 mb-4">Save your result to the leaderboard:</p>
+                <input type="text" id="student-name" class="w-full p-4 border-2 border-gray-100 rounded-xl focus:border-blue-500 focus:outline-none mb-3 text-center" placeholder="Enter your name">
+                <button id="save-btn" onclick="saveResult()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition shadow-md disabled:opacity-50">
+                    Save My Score
+                </button>
+            </div>
+
+            <button onclick="location.reload()" class="text-gray-500 hover:text-black font-medium transition">
+                Return to Home
+            </button>
+        </div>
+
+        <!-- Names List Modal -->
+        <div id="results-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40">
+            <div class="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl max-h-[80vh] flex flex-col">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">Recent Results</h2>
+                    <button onclick="closeResultsList()" class="text-gray-400 hover:text-black">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div id="results-history" class="overflow-y-auto space-y-2 pr-2 flex-1 results-list">
+                     <p class="text-sm text-gray-400 italic">No results yet...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detail View Modal -->
+        <div id="detail-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div class="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl max-h-[80vh] overflow-hidden flex flex-col">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 id="detail-title" class="text-xl font-bold">Student Breakdown</h2>
+                    <button onclick="closeDetails()" class="text-gray-400 hover:text-black">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div id="detail-list" class="overflow-y-auto space-y-3 pr-2 flex-1 results-list">
+                    <!-- Breakdown items go here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, onSnapshot, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Setup using environment-provided variables for sandbox stability
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "AIzaSyAsHl8TSl-l6Q7M1e48alEYExuED-_VUGo",
+            authDomain: "prepare-3---u7---vocab.firebaseapp.com",
+            projectId: "prepare-3---u7---vocab",
+            storageBucket: "prepare-3---u7---vocab.firebasestorage.app",
+            messagingSenderId: "463711047483",
+            appId: "1:463711047483:web:513e655d994b2310bf711e",
+            measurementId: "G-7REEJ1WNTR"
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'adventure-quest-default';
+
+        let user = null;
+        let allResultsData = [];
+
+        // Auth Logic (Rule 3) - Ensuring initialization works correctly in context
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth initialization failed:", error);
+            }
+        };
+        initAuth();
+
+        onAuthStateChanged(auth, (u) => {
+            user = u;
+            if (user) {
+                listenToResults();
+            }
+        });
+
+        // Listen for new results
+        function listenToResults() {
+            if (!user) return;
+            const resultsRef = collection(db, 'artifacts', appId, 'public', 'data', 'quiz_results');
+            onSnapshot(resultsRef, (snapshot) => {
+                const results = [];
+                snapshot.forEach(doc => results.push({ id: doc.id, ...doc.data() }));
+                // Sort by timestamp in memory (Rule 2)
+                results.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+                allResultsData = results;
+                renderResultsList();
+            }, (err) => console.error("Firestore error:", err));
+        }
+
+        window.openResultsList = () => {
+            document.getElementById('results-modal').classList.remove('hidden');
+        };
+
+        window.closeResultsList = () => {
+            document.getElementById('results-modal').classList.add('hidden');
+        };
+
+        function renderResultsList() {
+            const container = document.getElementById('results-history');
+            if (allResultsData.length === 0) {
+                container.innerHTML = `<p class="text-sm text-gray-400 italic">No results yet...</p>`;
+                return;
+            }
+
+            container.innerHTML = allResultsData.map((res, idx) => `
+                <button onclick="window.viewDetails('${res.id}')" class="w-full flex justify-between items-center p-3 bg-white border border-gray-100 rounded-xl hover:border-blue-300 transition shadow-sm text-left">
+                    <div>
+                        <span class="font-bold text-gray-800">${res.studentName || 'Anonymous'}</span>
+                        <div class="text-[10px] text-gray-400 uppercase font-bold">${res.timestamp ? new Date(res.timestamp.seconds * 1000).toLocaleDateString() : 'Recent'}</div>
+                    </div>
+                    <div class="bg-blue-50 text-blue-600 font-black px-3 py-1 rounded-lg text-sm">
+                        ${res.score}/20
+                    </div>
+                </button>
+            `).join('');
+        }
+
+        window.viewDetails = (id) => {
+            const res = allResultsData.find(r => r.id === id);
+            if (!res) return;
+
+            // Close names modal, open details modal
+            closeResultsList();
+
+            document.getElementById('detail-title').innerText = `${res.studentName}'s Breakdown`;
+            const list = document.getElementById('detail-list');
+            list.innerHTML = res.details.map((item, idx) => `
+                <div class="p-3 rounded-xl border-l-4 ${item.isCorrect ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'}">
+                    <div class="text-xs font-bold text-gray-400 mb-1">Question ${idx + 1}</div>
+                    <div class="text-sm font-semibold mb-1">${item.question}</div>
+                    <div class="text-xs">
+                        <span class="text-gray-500">Answer:</span> <span class="font-bold">${item.userAnswer || '(Timed out)'}</span>
+                        ${!item.isCorrect ? `<br/><span class="text-gray-500">Correct:</span> <span class="font-bold text-green-600">${item.correctAnswer}</span>` : ''}
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('detail-modal').classList.remove('hidden');
+        };
+
+        window.closeDetails = () => {
+            document.getElementById('detail-modal').classList.add('hidden');
+            // Re-open names list when closing details for easier browsing
+            openResultsList();
+        };
+
+        // Game Logic State
+        const MAX_TIME = 40;
+        const activities = [
+            { term: 'diving', emoji: '🤿', meaning: 'Swimming deep underwater with breathing equipment' },
+            { term: 'hiking', emoji: '🥾', meaning: 'Walking for long distances in nature or mountains' },
+            { term: 'horse riding', emoji: '🐎', meaning: 'Sitting on and controlling a horse' },
+            { term: 'camping', emoji: '⛺', meaning: 'Staying in a tent or temporary shelter outdoors' },
+            { term: 'kite surfing', emoji: '🪁', meaning: 'Riding on water using a board and a large kite' },
+            { term: 'paddle boarding', emoji: '🏄‍♂️', meaning: 'Standing on a board and moving with a paddle' },
+            { term: 'sailing', emoji: '⛵', meaning: 'Traveling on water in a boat powered by wind' },
+            { term: 'zip wiring', emoji: '🚠', meaning: 'Sliding down a cable while hanging from a harness' },
+            { term: 'mountain biking', emoji: '🚵', meaning: 'Riding a bicycle over rough, hilly terrain' },
+            { term: 'waterskiing', emoji: '🎿', meaning: 'Being pulled across water by a boat while on skis' }
+        ];
+
+        let questions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let currentRunDetails = [];
+        let timerValue = MAX_TIME;
+        let timerInterval = null;
+        let recognition = null;
+        let micAllowed = false;
+        let voiceTimeout = null;
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        window.requestPermissionAndStart = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                stream.getTracks().forEach(track => track.stop());
+                micAllowed = true;
+            } catch (err) {
+                micAllowed = false;
+            }
+            startGame();
+        };
+
+        function generateQuestions() {
+            const qList = [];
+            activities.forEach(act => {
+                const distractors = activities.filter(a => a.term !== act.term).sort(() => Math.random() - 0.5).slice(0, 3).map(a => a.term);
+                qList.push({ type: 'mc', question: act.meaning, correct: act.term, options: shuffleArray([...distractors, act.term]) });
+            });
+            const emojiBlacklist = ['hiking', 'paddle boarding', 'waterskiing', 'zip wiring'];
+            activities.filter(a => !emojiBlacklist.includes(a.term)).forEach(act => {
+                qList.push({ type: 'gap', question: `${act.emoji} — Complete the activity name:`, correct: act.term });
+            });
+            const recordPhrases = [
+                { phrase: "I enjoy diving", target: "i enjoy diving" },
+                { phrase: "Go horse riding", target: "go horse riding" },
+                { phrase: "Camping is fun", target: "camping is fun" },
+                { phrase: "Let's go sailing", target: "lets go sailing" }
+            ];
+            recordPhrases.forEach(item => {
+                qList.push({ type: 'recording', question: `Say clearly:`, correct: item.target, displayPhrase: item.phrase });
+            });
+            return shuffleArray(qList);
+        }
+
+        function startGame() {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.lang = 'en-US';
+            }
+            questions = generateQuestions();
+            currentQuestionIndex = 0;
+            score = 0;
+            currentRunDetails = [];
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            document.getElementById('result-screen').classList.add('hidden');
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const q = questions[currentQuestionIndex];
+            const feedback = document.getElementById('feedback');
+            const interaction = document.getElementById('interaction-area');
+            const qType = document.getElementById('question-type');
+            const qText = document.getElementById('question-text');
+            const progress = document.getElementById('progress-text');
+
+            feedback.innerText = '';
+            interaction.innerHTML = '';
+            progress.innerText = `Question ${currentQuestionIndex + 1}/20`;
+            
+            if (q.type === 'mc') {
+                qText.innerText = q.question;
+                qType.innerText = 'Multiple Choice';
+                q.options.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = 'w-full text-left p-4 mb-3 border-2 border-gray-100 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition font-semibold capitalize';
+                    btn.innerText = opt;
+                    btn.onclick = () => checkAnswer(opt, btn);
+                    interaction.appendChild(btn);
+                });
+            } else if (q.type === 'gap') {
+                qText.innerText = q.question;
+                qType.innerText = 'Fill in the Gap';
+                interaction.innerHTML = `
+                    <input type="text" id="gap-input" class="w-full p-4 border-2 border-gray-100 rounded-xl focus:border-blue-500 focus:outline-none text-lg mb-4 text-center capitalize" placeholder="Type activity name..." autocomplete="off">
+                    <button id="gap-submit" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition">Submit Answer</button>
+                `;
+                const input = document.getElementById('gap-input');
+                input.focus();
+                document.getElementById('gap-submit').onclick = () => checkAnswer(input.value.toLowerCase().trim());
+                input.onkeypress = (e) => { if (e.key === 'Enter') checkAnswer(input.value.toLowerCase().trim()); };
+            } else if (q.type === 'recording') {
+                qType.innerText = 'Voice Recording';
+                qText.innerHTML = `${q.question}<br/><span class="text-blue-600 text-3xl mt-2 block font-bold">"${q.displayPhrase}"</span>`;
+                interaction.innerHTML = `
+                    <div class="flex flex-col items-center">
+                        <button id="mic-btn" class="w-24 h-24 bg-blue-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-blue-600 transition mb-4 active:scale-95">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-20a3 3 0 00-3 3v10a3 3 0 006 0V3a3 3 0 00-3-3z" /></svg>
+                        </button>
+                        <p id="mic-status" class="text-gray-500 text-sm font-medium">Click mic and speak</p>
+                        <button id="retry-btn" class="mt-4 px-6 py-2 bg-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-300 hidden">Say Again</button>
+                        <input type="text" id="mic-fallback" class="w-full mt-4 p-3 border-2 border-gray-100 rounded-xl focus:border-blue-300 focus:outline-none text-center hidden" placeholder="Or type the phrase here">
+                    </div>
+                `;
+                const micBtn = document.getElementById('mic-btn');
+                const micStatus = document.getElementById('mic-status');
+                const retryBtn = document.getElementById('retry-btn');
+                const fallback = document.getElementById('mic-fallback');
+
+                const startRec = () => {
+                    clearTimeout(voiceTimeout);
+                    retryBtn.classList.add('hidden');
+                    micBtn.classList.add('mic-pulse', 'bg-red-500');
+                    micStatus.innerText = "Listening...";
+                    recognition.start();
+                };
+
+                if (!recognition || !micAllowed) {
+                    micStatus.innerText = "Mic unavailable. Please type:";
+                    fallback.classList.remove('hidden');
+                    fallback.onkeypress = (e) => { if (e.key === 'Enter') checkAnswer(fallback.value.toLowerCase().trim()); };
+                } else {
+                    micBtn.onclick = startRec;
+                    retryBtn.onclick = startRec;
+                    recognition.onresult = (e) => {
+                        const res = e.results[0][0].transcript.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"");
+                        micBtn.classList.remove('mic-pulse', 'bg-red-500');
+                        micStatus.innerText = `Heard: "${res}"`;
+                        retryBtn.classList.remove('hidden');
+                        voiceTimeout = setTimeout(() => checkAnswer(res), 2000);
+                    };
+                }
+            }
+            resetTimer();
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            timerValue = MAX_TIME;
+            updateTimerUI();
+            timerInterval = setInterval(() => {
+                timerValue--;
+                updateTimerUI();
+                if (timerValue <= 0) {
+                    clearInterval(timerInterval);
+                    handleTimeUp();
+                }
+            }, 1000);
+        }
+
+        function updateTimerUI() {
+            const bar = document.getElementById('timer-bar');
+            const text = document.getElementById('timer-text');
+            bar.style.width = `${(timerValue / MAX_TIME) * 100}%`;
+            text.innerText = timerValue;
+            if (timerValue <= 10) {
+                bar.className = 'timer-bar bg-red-500 h-2 rounded-full w-full';
+                text.className = 'font-mono font-bold text-red-600 text-lg';
+            } else {
+                bar.className = 'timer-bar bg-orange-500 h-2 rounded-full w-full';
+                text.className = 'font-mono font-bold text-orange-600 text-lg';
+            }
+        }
+
+        function handleTimeUp() {
+            checkAnswer("", null, true);
+        }
+
+        function checkAnswer(answer, element = null, timedOut = false) {
+            clearInterval(timerInterval);
+            clearTimeout(voiceTimeout);
+            if (recognition) try { recognition.stop(); } catch(e) {}
+            
+            const q = questions[currentQuestionIndex];
+            const correct = q.correct;
+            const isCorrect = answer.includes(correct) || (correct.length > 5 && answer.length > 5 && (answer.includes(correct) || correct.includes(answer)));
+
+            currentRunDetails.push({
+                question: q.type === 'mc' ? q.question : (q.displayPhrase || q.question),
+                userAnswer: answer,
+                correctAnswer: correct,
+                isCorrect: isCorrect && !timedOut
+            });
+
+            const feedback = document.getElementById('feedback');
+            if (isCorrect && !timedOut && answer.length > 0) {
+                score++;
+                feedback.innerText = "Excellent! Correct.";
+                feedback.className = 'mt-4 h-6 text-center font-semibold text-sm text-green-500';
+                if (element) element.classList.add('bg-green-100', 'border-green-500');
+            } else {
+                feedback.innerText = timedOut ? `Time's up! Correct was: ${correct}` : `Wrong! Correct was: ${correct}`;
+                feedback.className = 'mt-4 h-6 text-center font-semibold text-sm text-red-500';
+                if (element) element.classList.add('bg-red-100', 'border-red-500');
+                document.getElementById('quiz-screen').classList.add('shake');
+            }
+
+            document.querySelectorAll('#interaction-area button, #interaction-area input').forEach(el => el.disabled = true);
+            setTimeout(() => {
+                document.getElementById('quiz-screen').classList.remove('shake');
+                currentQuestionIndex++;
+                if (currentQuestionIndex < questions.length) loadQuestion();
+                else showResults();
+            }, 2000);
+        }
+
+        function showResults() {
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            document.getElementById('final-score').innerText = `${score}/20`;
+            document.getElementById('save-section').classList.remove('hidden');
+            document.getElementById('save-btn').disabled = false;
+            document.getElementById('save-btn').innerText = "Save My Score";
+        }
+
+        window.saveResult = async () => {
+            const name = document.getElementById('student-name').value.trim();
+            if (!name) return;
+            if (!user) return;
+
+            const btn = document.getElementById('save-btn');
+            btn.disabled = true;
+            btn.innerText = "Saving...";
+
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'quiz_results'), {
+                    studentName: name,
+                    score: score,
+                    details: currentRunDetails,
+                    timestamp: { seconds: Math.floor(Date.now() / 1000) } 
+                });
+                document.getElementById('save-section').innerHTML = `<p class="text-green-600 font-bold p-4 bg-green-50 rounded-xl">Score saved successfully!</p>`;
+            } catch (e) {
+                console.error(e);
+                btn.disabled = false;
+                btn.innerText = "Save My Score";
+            }
+        };
+    </script>
+</body>
+</html>
