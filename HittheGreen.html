@@ -349,7 +349,7 @@
                 <div class="point-legend">
                     <div class="legend-item"><div class="legend-color seg-red"></div> 0 Pts</div>
                     <div class="legend-item"><div class="legend-color seg-orange"></div> 1 Pt</div>
-                    <div class="legend-item"><div class="legend-color seg-blue"></div> 2 Pts</div>
+                    <div class="legend-item"><div class="legend-color seg-blue"></div> 3 Pts</div>
                     <div class="legend-item"><div class="legend-color seg-green"></div> 5 Pts</div>
                 </div>
             </div>
@@ -692,8 +692,8 @@
         
         const pattern = [
             { type: 'red', pts: 0, w: wRedL }, { type: 'orange', pts: 1, w: wOrangeL },
-            { type: 'blue', pts: 2, w: wBlueL }, { type: 'green', pts: 5, w: wGreen },
-            { type: 'blue', pts: 2, w: wBlueR }, { type: 'orange', pts: 1, w: wOrangeR },
+            { type: 'blue', pts: 3, w: wBlueL }, { type: 'green', pts: 5, w: wGreen },
+            { type: 'blue', pts: 3, w: wBlueR }, { type: 'orange', pts: 1, w: wOrangeR },
             { type: 'red', pts: 0, w: wRedR }
         ];
 
@@ -833,7 +833,9 @@
         } catch (e) { 
             console.error("Initialization Error:", e);
             document.getElementById('loading-text').innerText = "Offline Mode (Cloud Unavailable)";
-            setTimeout(() => document.getElementById('loading-overlay').classList.add('hidden'), 3000);
+            setTimeout(() => {
+                document.getElementById('loading-overlay').classList.add('hidden');
+            }, 3000);
         }
     };
 
@@ -848,7 +850,9 @@
         }, (err) => {
             console.error("Cloud Sync failed", err);
             document.getElementById('loading-text').innerText = "Cloud Sync Issue";
-            setTimeout(() => document.getElementById('loading-overlay').classList.add('hidden'), 2000);
+            setTimeout(() => {
+                document.getElementById('loading-overlay').classList.add('hidden');
+            }, 2000);
         });
     };
 
