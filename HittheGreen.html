@@ -252,7 +252,6 @@
 </div>
 
 <div class="container">
-    <!-- Setup Screen -->
     <div id="screen-setup">
         <div class="game-title">Hit the green</div>
         
@@ -285,15 +284,24 @@
         </div>
 
         <div id="setup-step-2" class="setup-box hidden">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <label class="setup-label" style="margin: 0;">Cloud Library</label>
                 <button class="btn-ghost" onclick="backToStep1()" style="padding: 8px 16px;">Back to Setup</button>
             </div>
+            
+            <!-- Library Sort Controls -->
+            <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center; justify-content: flex-end;">
+                <label class="setup-label" style="margin: 0; font-size: 0.75rem;">Sort By:</label>
+                <select id="lib-sort-select" class="setup-select" style="width: auto; padding: 8px; font-size: 0.75rem;" onchange="window.handleSortChange(this.value)">
+                    <option value="timestamp">Newest First</option>
+                    <option value="name">Name (A-Z)</option>
+                </select>
+            </div>
+
             <div class="lib-grid" id="lib-grid-container"></div>
         </div>
     </div>
 
-    <!-- Manual Import Modal -->
     <div id="import-overlay" class="hidden">
         <div class="import-modal">
             <label id="modal-title" class="setup-label">Import & Save Questions</label>
@@ -306,7 +314,6 @@
         </div>
     </div>
 
-    <!-- Game UI -->
     <div id="game-ui" class="hidden">
         <div class="quit-btn" onclick="confirmQuit()">QUIT TO HOME</div>
         <div id="screen-grid">
@@ -351,7 +358,6 @@
         </div>
     </div>
 
-    <!-- Results Screen -->
     <div id="screen-winner" class="hidden">
         <div style="font-size: 6rem; margin-bottom: 10px;">🏆</div>
         <h1 id="winner-text" style="font-family: 'Luckiest Guy', cursive; font-size: 4rem; color: var(--accent);">TEAM 1 WINS!</h1>
@@ -365,12 +371,15 @@
     import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, collection, addDoc, onSnapshot, doc, setDoc, deleteDoc, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    /* --- PORTABLE CLOUD CONFIGURATION ---
-       If you are deploying this to GitHub Pages or any other host, 
-       you must replace the null below with your own Firebase Config object.
-       Example: 
-       const EXTERNAL_CONFIG = { apiKey: "...", authDomain: "...", projectId: "...", ... };
-    */
+    // --- SHARED STATE ---
+    let user = null;
+    let savedLibraries = [];
+    let librarySortBy = 'timestamp'; // 'timestamp' or 'name'
+    let selectedLibId = null;
+    let editingId = null;
+    let auth, db, appId;
+
+    // --- YOUR SPECIFIC FIREBASE CONFIG ---
     const EXTERNAL_CONFIG = {
       apiKey: "AIzaSyCdivRAtt3b0zQpJ8LBBkFR0tdAESeJ9aQ",
       authDomain: "hit-the-green.firebaseapp.com",
@@ -381,17 +390,19 @@
       measurementId: "G-105NQK63ZP"
     }; 
 
-    // --- SHARED STATE ---
-    let user = null;
-    let savedLibraries = [];
-    let selectedLibId = null;
-    let editingId = null;
-    let auth, db, appId;
-
     // --- CORE GAME DATA ---
     let gameData = {
         questions: [], teams: 2, difficulty: 'easy', scores: {},
         currentTeam: 1, openedBoxes: new Set(), currentQuestionIdx: -1, segments: []
+    };
+
+    // --- UTILS ---
+    const shuffleArray = (array) => {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
     };
 
     // --- UI HELPERS ---
@@ -419,7 +430,7 @@
         return n;
     };
 
-    // --- ATTACH INTERACTIVE FUNCTIONS TO WINDOW ---
+    // --- INTERACTIVE WINDOW FUNCTIONS ---
     window.goToLibraryStep = () => {
         document.getElementById('setup-step-1').classList.add('hidden');
         document.getElementById('setup-step-2').classList.remove('hidden');
@@ -451,6 +462,11 @@
         gameData.currentTeam = 1;
         showScreen('screen-setup');
         window.backToStep1();
+    };
+
+    window.handleSortChange = (val) => {
+        librarySortBy = val;
+        renderLibraryGrid();
     };
 
     window.selectLibrary = (id) => {
@@ -529,22 +545,34 @@
         else { playSound('fail'); nextTurn(); }
     };
 
-    // --- CLOUD RENDER ---
+    // --- RENDER GRID ---
     const renderLibraryGrid = () => {
         const grid = document.getElementById('lib-grid-container');
         if (!grid) return;
         grid.innerHTML = '';
 
+        // Add Create Button
         const importBtn = document.createElement('div');
         importBtn.className = "lib-card import-trigger";
         importBtn.innerText = "+ Create New List";
         importBtn.onclick = window.openImportModal;
         grid.appendChild(importBtn);
 
-        savedLibraries.forEach(lib => {
+        // Sort Copy of Array
+        const sorted = [...savedLibraries].sort((a, b) => {
+            if (librarySortBy === 'timestamp') {
+                return (b.timestamp || 0) - (a.timestamp || 0);
+            } else {
+                return (a.name || "").toLowerCase().localeCompare((b.name || "").toLowerCase());
+            }
+        });
+
+        sorted.forEach(lib => {
+            const dateStr = lib.timestamp ? new Date(lib.timestamp).toLocaleDateString() : 'No date';
             const card = document.createElement('div');
             card.className = `lib-card ${selectedLibId === lib.id ? 'active' : ''}`;
             card.innerHTML = `
+                <div style="position: absolute; top: 12px; left: 15px; font-size: 0.65rem; color: #94a3b8; font-weight: 700;">${dateStr}</div>
                 <span>${lib.name}</span>
                 <div class="lib-actions">
                     <div class="action-btn btn-edit" onclick="event.stopPropagation(); window.editLibrary('${lib.id}')">
@@ -569,13 +597,19 @@
         }
         const found = savedLibraries.find(l => l.id === selectedLibId);
         if (!found || !found.questions.length) return;
+        
         const teamSelect = document.getElementById('setup-teams');
         const diffSelect = document.getElementById('setup-difficulty');
         gameData.teams = parseInt(teamSelect.value);
         gameData.difficulty = diffSelect.value;
-        const source = found.questions;
+        
+        // 1. Shuffle original source list to mix them up
+        const source = shuffleArray([...found.questions]);
+        
+        // 2. Take only what fits perfectly for the teams
         const finalCount = source.length - (source.length % gameData.teams);
         gameData.questions = source.slice(0, finalCount);
+        
         gameData.scores = {};
         gameData.openedBoxes = new Set();
         gameData.currentTeam = 1;
@@ -633,7 +667,7 @@
         showSubScreen('screen-grid');
     };
 
-    // --- MINI GAME LOGIC ---
+    // --- MINI GAME ---
     let arrowPos = 0, arrowDir = 1, arrowActive = false, animId = null;
 
     const startMiniGame = () => {
@@ -770,35 +804,26 @@
     const initApp = async () => {
         try {
             let firebaseConfig = null;
-
-            // 1. Check for platform-injected config
             const hasPlatformConfig = typeof __firebase_config !== 'undefined' && __firebase_config;
             
             if (hasPlatformConfig) {
                 firebaseConfig = JSON.parse(__firebase_config);
             } else if (EXTERNAL_CONFIG) {
-                // 2. Check for hardcoded external config (for GitHub/etc)
                 firebaseConfig = EXTERNAL_CONFIG;
             }
 
-            if (!firebaseConfig) {
-                throw new Error("No Firebase configuration found.");
-            }
+            if (!firebaseConfig) throw new Error("No Firebase configuration found.");
 
             const app = initializeApp(firebaseConfig);
             auth = getAuth(app);
             db = getFirestore(app);
             appId = typeof __app_id !== 'undefined' ? __app_id : 'hit-the-green-global';
             
-            // Set up listener before starting sign-in
             onAuthStateChanged(auth, (u) => { 
                 user = u; 
-                if (u) {
-                    setupCloudSync(); 
-                }
+                if (u) setupCloudSync(); 
             });
 
-            // Rule 3: Auth first
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                 await signInWithCustomToken(auth, __initial_auth_token);
             } else { 
@@ -808,32 +833,22 @@
         } catch (e) { 
             console.error("Initialization Error:", e);
             document.getElementById('loading-text').innerText = "Offline Mode (Cloud Unavailable)";
-            setTimeout(() => {
-                document.getElementById('loading-overlay').classList.add('hidden');
-            }, 3000);
+            setTimeout(() => document.getElementById('loading-overlay').classList.add('hidden'), 3000);
         }
     };
 
     const setupCloudSync = () => {
         if (!user) return;
-
-        // Rule 1: Public path
         const libCol = collection(db, 'artifacts', appId, 'public', 'data', 'questionLibraries');
         const q = query(libCol);
-
-        // Rule 2: Simple snapshot listener
         onSnapshot(q, (snap) => {
             savedLibraries = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            // Rule 2: Sort in memory
-            savedLibraries.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
             renderLibraryGrid();
             document.getElementById('loading-overlay').classList.add('hidden');
         }, (err) => {
             console.error("Cloud Sync failed", err);
             document.getElementById('loading-text').innerText = "Cloud Sync Issue";
-            setTimeout(() => {
-                document.getElementById('loading-overlay').classList.add('hidden');
-            }, 2000);
+            setTimeout(() => document.getElementById('loading-overlay').classList.add('hidden'), 2000);
         });
     };
 
