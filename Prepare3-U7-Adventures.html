@@ -158,15 +158,17 @@
         import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- FIREBASE CONFIGURATION ---
-        // For GitHub deployment, replace this placeholder with your config from Step 1 of the guide.
-        const firebaseConfig = {
-  apiKey: "AIzaSyBPWo3YtT4K3bJEhmT-kVVUgPBQ1Rgdhw4",
-  authDomain: "prepare-3---u7---vocab-87f82.firebaseapp.com",
-  projectId: "prepare-3---u7---vocab-87f82",
-  storageBucket: "prepare-3---u7---vocab-87f82.firebasestorage.app",
-  messagingSenderId: "738254830931",
-  appId: "1:738254830931:web:edef36f08fd6a7b43a75a6"
-};
+        // Dynamically detects if in the Canvas environment or standalone deployment.
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : {
+                apiKey: "AIzaSyBPWo3YtT4K3bJEhmT-kVVUgPBQ1Rgdhw4",
+                authDomain: "prepare-3---u7---vocab-87f82.firebaseapp.com",
+                projectId: "prepare-3---u7---vocab-87f82",
+                storageBucket: "prepare-3---u7---vocab-87f82.firebasestorage.app",
+                messagingSenderId: "738254830931",
+                appId: "1:738254830931:web:edef36f08fd6a7b43a75a6"
+            };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -176,7 +178,7 @@
         let user = null;
         let allResultsData = [];
 
-        // Auth initialization
+        // Auth initialization (RULE 3)
         const initAuth = async () => {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -210,7 +212,11 @@
                 results.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
                 allResultsData = results;
                 renderResultsList();
-            }, (err) => console.error("Database connection error:", err));
+            }, (err) => {
+                console.error("Database connection error:", err);
+                const container = document.getElementById('results-history');
+                container.innerHTML = `<p class="text-sm text-red-400 italic text-center py-8">Access Denied. Check Firebase Rules.</p>`;
+            });
         }
 
         window.openResultsList = () => { document.getElementById('results-modal').classList.remove('hidden'); };
@@ -310,17 +316,14 @@
 
         function generateQuestions() {
             const qList = [];
-            // 1. Multiple Choice (10)
             activities.forEach(act => {
                 const distractors = shuffle(activities.filter(a => a.term !== act.term)).slice(0, 3).map(a => a.term);
                 qList.push({ type: 'mc', question: act.meaning, correct: act.term, options: shuffle([...distractors, act.term]) });
             });
-            // 2. Emoji Gaps (6) - Excludes specific ones
             const emojiBlacklist = ['hiking', 'paddle boarding', 'waterskiing', 'zip wiring'];
             activities.filter(a => !emojiBlacklist.includes(a.term)).forEach(act => {
                 qList.push({ type: 'gap', question: `${act.emoji} — Activity:`, correct: act.term });
             });
-            // 3. Voice tasks (4)
             const voices = [
                 { phrase: "I enjoy diving", target: "i enjoy diving" },
                 { phrase: "Go horse riding", target: "go horse riding" },
@@ -420,18 +423,27 @@
         }
 
         window.saveResult = async () => {
+            if (!user) { alert("Please wait for database connection."); return; }
             const nameField = document.getElementById('student-name');
             const instr = document.getElementById('save-instruction');
             const name = nameField.value.trim();
             if (!name) { instr.innerText = "⚠️ Please enter your name!"; instr.className = "text-red-500 font-bold mb-4"; return; }
-            if (!firebaseConfig.apiKey) { instr.innerText = "⚠️ Firebase is not configured."; return; }
+            
             const btn = document.getElementById('save-btn');
             btn.disabled = true; btn.innerText = "Saving...";
             try {
-                // RULE 1: Strict Paths
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'quiz_results'), { studentName: name, score: score, details: currentRunDetails, timestamp: serverTimestamp() });
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'quiz_results'), { 
+                    studentName: name, 
+                    score: score, 
+                    details: currentRunDetails, 
+                    timestamp: serverTimestamp() 
+                });
                 document.getElementById('save-section').innerHTML = `<p class="text-green-600 font-black p-6 bg-green-50 rounded-2xl">Result Saved!</p>`;
-            } catch (e) { btn.disabled = false; btn.innerText = "Save My Score"; instr.innerText = "Save failed. Check Firebase Rules."; }
+            } catch (e) { 
+                console.error(e);
+                btn.disabled = false; btn.innerText = "Save My Score"; 
+                instr.innerText = "Save failed. Check Firebase Rules."; 
+            }
         };
     </script>
 </body>
