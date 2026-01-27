@@ -158,7 +158,6 @@
         import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- FIREBASE CONFIGURATION ---
-        // Dynamically detects if in the Canvas environment or standalone deployment.
         const firebaseConfig = typeof __firebase_config !== 'undefined' 
             ? JSON.parse(__firebase_config) 
             : {
@@ -178,7 +177,7 @@
         let user = null;
         let allResultsData = [];
 
-        // Auth initialization (RULE 3)
+        // Auth initialization
         const initAuth = async () => {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -203,12 +202,10 @@
 
         function listenToResults() {
             if (!user) return;
-            // RULE 1: Strict Paths
             const resultsRef = collection(db, 'artifacts', appId, 'public', 'data', 'quiz_results');
             onSnapshot(resultsRef, (snapshot) => {
                 const results = [];
                 snapshot.forEach(doc => results.push({ id: doc.id, ...doc.data() }));
-                // RULE 2: Filter/Sort in memory
                 results.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
                 allResultsData = results;
                 renderResultsList();
@@ -272,6 +269,38 @@
             openResultsList();
         };
 
+        // --- SOUND SYSTEM ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSynthSound(freq, type, duration, volume = 0.1) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.type = type;
+            oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + duration);
+        }
+
+        const sounds = {
+            correct: () => {
+                playSynthSound(523.25, 'sine', 0.2); // C5
+                setTimeout(() => playSynthSound(659.25, 'sine', 0.3), 100); // E5
+            },
+            wrong: () => {
+                playSynthSound(150, 'sawtooth', 0.4, 0.05);
+                playSynthSound(120, 'sawtooth', 0.4, 0.05);
+            },
+            tick: () => playSynthSound(800, 'square', 0.05, 0.02),
+            complete: () => {
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((f, i) => setTimeout(() => playSynthSound(f, 'sine', 0.5), i * 150));
+            }
+        };
+
         // --- GAME LOGIC ---
         const MAX_TIME = 40;
         const activities = [
@@ -311,6 +340,7 @@
                 stream.getTracks().forEach(track => track.stop());
                 micAllowed = true;
             } catch (err) { micAllowed = false; }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
             startGame();
         };
 
@@ -328,7 +358,7 @@
                 { phrase: "I enjoy diving", target: "i enjoy diving" },
                 { phrase: "Go horse riding", target: "go horse riding" },
                 { phrase: "Camping is fun", target: "camping is fun" },
-                { phrase: "Let's go sailing", target: "lets go sailing" }
+                { phrase: "Let's go sailing", target: "let's go sailing" }
             ];
             voices.forEach(item => {
                 qList.push({ type: 'recording', question: `Say:`, correct: item.target, displayPhrase: item.phrase });
@@ -392,7 +422,12 @@
 
         function resetTimer() {
             clearInterval(timerInterval); timerValue = MAX_TIME; updateTimerUI();
-            timerInterval = setInterval(() => { timerValue--; updateTimerUI(); if (timerValue <= 0) { clearInterval(timerInterval); checkAnswer("", null, true); } }, 1000);
+            timerInterval = setInterval(() => { 
+                timerValue--; 
+                updateTimerUI(); 
+                if (timerValue <= 5 && timerValue > 0) sounds.tick();
+                if (timerValue <= 0) { clearInterval(timerInterval); checkAnswer("", null, true); } 
+            }, 1000);
         }
 
         function updateTimerUI() {
@@ -404,14 +439,50 @@
 
         function checkAnswer(answer, element = null, timedOut = false) {
             clearInterval(timerInterval); clearTimeout(voiceTimeout); if (recognition) try { recognition.stop(); } catch(e) {}
+            
             const q = questions[currentQuestionIndex];
-            const isCorrect = answer.includes(q.correct) || (q.correct.length > 5 && answer.length > 5 && (answer.includes(q.correct) || q.correct.includes(answer)));
-            currentRunDetails.push({ question: q.type === 'mc' ? q.question : (q.displayPhrase || q.question), userAnswer: answer, correctAnswer: q.correct, isCorrect: isCorrect && !timedOut });
+            
+            // Normalize both correct and answer by removing apostrophes for flexible check
+            const normalizedCorrect = q.correct.toLowerCase().replace(/'/g, "");
+            const normalizedAnswer = answer.toLowerCase().replace(/'/g, "");
+            
+            const isCorrect = normalizedAnswer.includes(normalizedCorrect) || 
+                              (normalizedCorrect.length > 5 && normalizedAnswer.length > 5 && 
+                              (normalizedAnswer.includes(normalizedCorrect) || normalizedCorrect.includes(normalizedAnswer)));
+            
+            currentRunDetails.push({ 
+                question: q.type === 'mc' ? q.question : (q.displayPhrase || q.question), 
+                userAnswer: answer, 
+                correctAnswer: q.correct, 
+                isCorrect: isCorrect && !timedOut 
+            });
+            
             const f = document.getElementById('feedback');
-            if (isCorrect && !timedOut && answer.length > 0) { score++; f.innerText = "Correct!"; f.className = 'mt-4 h-6 text-center font-black text-sm text-green-500'; if (element) element.classList.add('bg-green-100', 'border-green-500'); }
-            else { f.innerText = timedOut ? `Time's up! It was: ${q.correct}` : `Incorrect! It was: ${q.correct}`; f.className = 'mt-4 h-6 text-center font-black text-sm text-red-500'; if (element) element.classList.add('bg-red-100', 'border-red-500'); document.getElementById('quiz-screen').classList.add('shake'); }
+            if (isCorrect && !timedOut && answer.length > 0) { 
+                score++; 
+                sounds.correct();
+                f.innerText = "Correct!"; 
+                f.className = 'mt-4 h-6 text-center font-black text-sm text-green-500'; 
+                if (element) element.classList.add('bg-green-100', 'border-green-500'); 
+            }
+            else { 
+                sounds.wrong();
+                f.innerText = timedOut ? `Time's up! It was: ${q.correct}` : `Incorrect! It was: ${q.correct}`; 
+                f.className = 'mt-4 h-6 text-center font-black text-sm text-red-500'; 
+                if (element) element.classList.add('bg-red-100', 'border-red-500'); 
+                document.getElementById('quiz-screen').classList.add('shake'); 
+            }
+            
             document.querySelectorAll('#interaction-area button, #interaction-area input').forEach(el => el.disabled = true);
-            setTimeout(() => { document.getElementById('quiz-screen').classList.remove('shake'); currentQuestionIndex++; if (currentQuestionIndex < questions.length) loadQuestion(); else showResults(); }, 2000);
+            setTimeout(() => { 
+                document.getElementById('quiz-screen').classList.remove('shake'); 
+                currentQuestionIndex++; 
+                if (currentQuestionIndex < questions.length) loadQuestion(); 
+                else {
+                    sounds.complete();
+                    showResults(); 
+                }
+            }, 2000);
         }
 
         function showResults() {
