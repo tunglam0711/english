@@ -1,4 +1,453 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tower City: Balance Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;800&display=swap');
+        body {
+            font-family: 'Fredoka', sans-serif;
+            overflow: hidden;
+            background-color: #38bdf8;
+            touch-action: none;
+            user-select: none;
+        }
+        .city-gradient {
+            background: linear-gradient(to bottom, #0ea5e9, #bae6fd 70%, #f0f9ff 100%);
+        }
+        .ui-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(8px);
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        input[type="range"] {
+            accent-color: #0ea5e9;
+        }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body class="h-screen w-full relative city-gradient">
+
+    <canvas id="gameCanvas" class="absolute inset-0 z-0"></canvas>
+
+    <!-- START SCREEN -->
+    <div id="start-screen" class="absolute inset-0 z-30 flex items-center justify-center bg-white/30 backdrop-blur-sm p-4 overflow-y-auto">
+        <div class="max-w-4xl w-full bg-white p-6 rounded-3xl shadow-2xl border-4 border-sky-100 flex flex-col md:flex-row gap-6 items-stretch">
+            <div class="flex-1 flex flex-col items-center justify-between text-center">
+                <div>
+                    <h1 class="text-5xl font-black text-sky-500 mb-2 drop-shadow-sm tracking-tight">
+                        TOWER<br><span class="text-slate-700">CITY</span>
+                    </h1>
+                    <p class="text-base text-slate-500 mb-4 font-bold">Balance Builder</p>
+                    <div class="bg-sky-50 rounded-xl p-3 border-2 border-sky-100 mb-4 w-full">
+                        <div class="flex items-center justify-center gap-3 mb-2">
+                            <div class="text-3xl">🏗️</div>
+                            <div class="text-xl text-slate-300">➜</div>
+                            <div class="text-3xl animate-bounce">👏</div>
+                        </div>
+                        <p class="text-slate-600 text-xs leading-relaxed font-medium">
+                            <strong>CLAP</strong> or <strong>SPACE</strong> to drop blocks.<br>
+                            Stack high, don't topple!
+                        </p>
+                    </div>
+                </div>
+                <div class="w-full max-w-xs mb-4">
+                    <label class="flex justify-between text-slate-400 text-[10px] font-bold mb-1 uppercase px-1">
+                        <span>Mic Sensitivity</span>
+                        <span id="sens-display">50%</span>
+                    </label>
+                    <input type="range" id="mic-sens" min="10" max="90" value="50" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                </div>
+            </div>
+
+            <div class="w-px bg-slate-200 hidden md:block"></div>
+
+            <div class="flex-1 w-full flex flex-col gap-4">
+                <div>
+                    <h3 class="text-slate-700 font-black text-sm mb-2 uppercase tracking-wider text-left">1. Game Mode</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button id="btn-solo" onclick="setMode('SOLO')" class="mode-btn p-3 rounded-xl border-2 transition-all border-sky-500 bg-sky-50">
+                            <div class="text-2xl mb-1">👤</div>
+                            <div class="font-bold text-slate-800 text-sm">Solo</div>
+                        </button>
+                        <button id="btn-multi" onclick="setMode('MULTI')" class="mode-btn p-3 rounded-xl border-2 transition-all border-slate-100 bg-white">
+                            <div class="text-2xl mb-1">👥</div>
+                            <div class="font-bold text-slate-800 text-sm">Pass & Play</div>
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-slate-700 font-black text-sm mb-2 uppercase tracking-wider text-left">2. Difficulty</h3>
+                    <div class="flex bg-slate-100 p-1 rounded-xl">
+                        <button id="btn-easy" onclick="setDiff('EASY')" class="flex-1 py-2 rounded-lg text-xs font-bold transition-all text-slate-500">Easy (Wide)</button>
+                        <button id="btn-normal" onclick="setDiff('NORMAL')" class="flex-1 py-2 rounded-lg text-xs font-bold transition-all bg-white shadow text-sky-600">Normal</button>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <label class="flex justify-between text-slate-500 text-[10px] font-bold mb-2 uppercase px-1">
+                        <span>Lives: <span id="lives-setup-val" class="text-sky-600 text-lg">3</span></span>
+                    </label>
+                    <input type="range" id="lives-setup" min="1" max="5" value="3" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                </div>
+
+                <button onclick="startGame()" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-black text-xl py-3 rounded-xl shadow-lg transition-all transform hover:scale-105 active:scale-95 mt-auto">
+                    START BUILDING
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- HUD -->
+    <div id="hud" class="hidden absolute top-0 left-0 w-full p-4 flex justify-between items-start z-20 pointer-events-none">
+        <div class="flex flex-col gap-3 pointer-events-auto">
+            <button onclick="goHome()" class="ui-panel text-slate-700 font-bold p-3 rounded-xl transition-transform hover:scale-105 active:scale-95 flex items-center justify-center w-12 h-12">
+                🏠
+            </button>
+            <div class="ui-panel rounded-xl px-4 py-2 flex flex-col justify-center min-w-[100px]">
+                <span class="text-[10px] uppercase text-slate-500 font-bold tracking-widest">Floors</span>
+                <div id="score-val" class="text-4xl font-black text-sky-600 leading-none">0</div>
+            </div>
+            <div id="multi-panel" class="hidden bg-orange-50/90 backdrop-blur rounded-xl px-4 py-2 w-36 border border-orange-200 shadow-lg">
+                <div class="text-[10px] uppercase text-slate-500 font-bold mb-1">Current Turn</div>
+                <div class="flex items-center gap-2">
+                    <span id="p-icon" class="text-xl">🔴</span>
+                    <span id="p-name" class="font-bold text-red-500">Player 1</span>
+                </div>
+                <div class="text-xs text-slate-400 mt-1 font-bold">Moves: <span id="moves-val" class="text-slate-600">3</span>/3</div>
+            </div>
+        </div>
+        <div class="flex flex-col items-end gap-3 pointer-events-auto">
+            <div class="ui-panel rounded-xl px-4 py-2 shadow-lg">
+                <div id="hearts-container" class="flex gap-1"></div>
+            </div>
+            <div class="ui-panel rounded-xl px-3 py-2 flex items-center gap-2 shadow-lg">
+                <div id="mic-icon" class="text-xl transition-transform">🎤</div>
+                <div class="w-24 h-4 bg-slate-200 rounded-full overflow-hidden relative border border-slate-300">
+                    <div id="mic-threshold" class="absolute top-0 bottom-0 w-1 bg-amber-400 z-10 shadow-sm" style="left: 50%;"></div>
+                    <div id="mic-bar" class="h-full bg-sky-500 transition-all duration-75" style="width: 0%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TURN CHANGE MODAL -->
+    <div id="turn-modal" class="hidden absolute inset-0 z-40 flex items-center justify-center bg-slate-900/90 backdrop-blur-md p-4">
+        <div class="text-center bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full border-4 border-white">
+            <h2 class="text-2xl font-bold text-slate-400 mb-2 uppercase tracking-widest">Next Turn</h2>
+            <div id="next-p-icon" class="text-6xl mb-4">🔵</div>
+            <h3 id="next-p-name" class="text-4xl font-black mb-6 text-sky-500">Player 2</h3>
+            <p class="text-slate-500 mb-8">Pass the device to the next player!</p>
+            <button onclick="confirmTurn()" class="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xl rounded-xl shadow-lg transition-transform hover:scale-105">
+                I'm Ready!
+            </button>
+        </div>
+    </div>
+
+    <!-- GAME OVER -->
+    <div id="game-over" class="hidden absolute inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4">
+        <div class="text-center bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full border-4 border-slate-200">
+            <div class="text-6xl mb-4">🏚️</div>
+            <h2 class="text-4xl font-black text-slate-800 mb-2">CRUMBLED!</h2>
+            <p id="over-msg" class="text-slate-500 mb-6 font-medium"></p>
+            <div class="bg-slate-100 rounded-xl p-4 mb-6">
+                <div class="text-[10px] uppercase text-slate-400 font-bold mb-1">Final Height</div>
+                <div id="final-score" class="text-6xl font-black text-sky-500">0</div>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="goHome()" class="flex-1 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl">Home</button>
+                <button onclick="startGame()" class="flex-1 py-3 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-xl shadow-lg">Retry</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONSTANTS ---
+        const BLOCK_HEIGHT = 80;
+        const START_SPEED = 3;
+        const GRAVITY = 25;
+        const P1_COLORS = ['#f87171', '#fb923c', '#fbbf24', '#facc15', '#e879f9'];
+        const P2_COLORS = ['#34d399', '#22d3ee', '#818cf8', '#60a5fa', '#a78bfa'];
+        const SOLO_COLORS = ['#f87171', '#fb923c', '#fbbf24', '#a3e635', '#34d399', '#22d3ee', '#818cf8', '#e879f9'];
+
+        // --- STATE ---
+        let gameState = 'START'; 
+        let gameMode = 'SOLO';
+        let difficulty = 'NORMAL';
+        let score = 0;
+        let lives = 3;
+        let maxLives = 3;
+        let micSensitivity = 50;
+        let currentPlayer = 1;
+        let movesInTurn = 0;
+
+        let canvas = document.getElementById('gameCanvas');
+        let ctx = canvas.getContext('2d');
+        let width, height, blockWidth;
+        let blocks = [], currentBlock = null;
+        let cameraY = 0, shake = 0, towerMass = 0, stackCenterOfMass = 0;
+        let cityBuildings = [];
+
+        // Audio
+        let audioCtx, analyser, dataArray, smoothedVolume = 0, lastClapTime = 0;
+
+        // --- CLASSES ---
+        class Block {
+            constructor(x, y, w, color, currentScore) {
+                this.x = x; this.y = y; this.w = w; this.h = BLOCK_HEIGHT; this.color = color;
+                this.swingRange = 250 + Math.random() * 450;
+                this.speed = (currentScore <= 4) ? (START_SPEED + currentScore * 0.2) : (START_SPEED + 1.5 + (currentScore - 4) * 0.4);
+                this.direction = Math.random() < 0.5 ? 1 : -1;
+                this.angle = 0;
+            }
+            updateSwing() {
+                this.x += this.speed * this.direction;
+                const halfSwing = this.swingRange / 2, blockHalf = this.w / 2;
+                const minX = (width/2) - halfSwing - blockHalf, maxX = (width/2) + halfSwing - blockHalf;
+                if (this.x > maxX) { this.x = maxX; this.direction = -1; }
+                else if (this.x < minX) { this.x = minX; this.direction = 1; }
+            }
+            draw() {
+                ctx.save();
+                const dY = this.y - cameraY;
+                if (this.angle !== 0) {
+                    ctx.translate(this.x + this.w/2, dY + this.h/2);
+                    ctx.rotate(this.angle);
+                    ctx.translate(-(this.x + this.w/2), -(dY + this.h/2));
+                }
+                ctx.fillStyle = this.color; ctx.fillRect(this.x, dY, this.w, this.h);
+                if (this.angle === 0) {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                    const cols = this.w > 100 ? 4 : 3;
+                    for (let r = 0; r < 2; r++) {
+                        for (let c = 0; c < cols; c++) {
+                            ctx.fillRect(this.x + 10 + c * 22, dY + 10 + r * 22, 12, 12);
+                        }
+                    }
+                }
+                ctx.strokeStyle = 'rgba(0,0,0,0.1)'; ctx.strokeRect(this.x, dY, this.w, this.h);
+                ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.fillRect(this.x, dY, this.w, 6);
+                ctx.restore();
+            }
+        }
+
+        // --- SOUND ENGINE ---
+        function playSound(type) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+            if (type === 'spawn') {
+                osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now); osc.start(); osc.stop(now + 0.1);
+            } else if (type === 'drop') {
+                osc.frequency.setValueAtTime(150, now); gain.gain.setValueAtTime(0.1, now); osc.start(); osc.stop(now + 0.4);
+            } else if (type === 'land') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(100, now); gain.gain.setValueAtTime(0.1, now); osc.start(); osc.stop(now + 0.1);
+            } else if (type === 'perfect') {
+                osc.frequency.setValueAtTime(523, now); gain.gain.setValueAtTime(0.2, now); osc.start(); osc.stop(now + 0.3);
+            } else if (type === 'miss') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(200, now); osc.frequency.linearRampToValueAtTime(50, now + 0.3);
+                gain.gain.setValueAtTime(0.1, now); osc.start(); osc.stop(now + 0.3);
+            }
+        }
+
+        // --- CORE LOGIC ---
+        function initAudio() {
+            if (audioCtx) return;
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioCtx.createAnalyser();
+                const source = audioCtx.createMediaStreamSource(stream);
+                source.connect(analyser);
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+            }).catch(() => {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            });
+        }
+
+        function checkClap() {
+            if (!analyser) return false;
+            analyser.getByteFrequencyData(dataArray);
+            let sum = 0; for(let i=0; i<dataArray.length; i++) sum += dataArray[i];
+            let instantVol = sum / dataArray.length;
+            smoothedVolume = (instantVol < smoothedVolume) ? instantVol : smoothedVolume + (instantVol - smoothedVolume) * 0.05;
+            document.getElementById('mic-bar').style.width = Math.min(100, instantVol * 3) + '%';
+            const threshold = smoothedVolume + (100 - micSensitivity) * 0.8;
+            const now = Date.now();
+            if (instantVol > threshold && instantVol > 10 && now - lastClapTime > 400) {
+                lastClapTime = now; return true;
+            }
+            return false;
+        }
+
+        function startGame() {
+            initAudio();
+            gameState = 'PLAYING'; score = 0; currentPlayer = 1; movesInTurn = 0;
+            lives = parseInt(document.getElementById('lives-setup').value);
+            maxLives = lives;
+            blockWidth = difficulty === 'EASY' ? 120 : 80;
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            blocks = []; cameraY = 0; shake = 0; towerMass = 5; stackCenterOfMass = width/2;
+            
+            const base = new Block(width/2 - blockWidth/2, height - 100, blockWidth, '#475569', 0);
+            blocks.push(base);
+            spawnBlock();
+            updateUI();
+            requestAnimationFrame(loop);
+        }
+
+        function spawnBlock() {
+            const palette = gameMode === 'MULTI' ? (currentPlayer === 1 ? P1_COLORS : P2_COLORS) : SOLO_COLORS;
+            const color = palette[Math.floor(Math.random() * palette.length)];
+            currentBlock = new Block(0, blocks[blocks.length-1].y - 200, blockWidth, color, score);
+            currentBlock.x = width/2 - currentBlock.swingRange/2;
+            playSound('spawn');
+        }
+
+        function loop() {
+            if (gameState === 'START' || gameState === 'GAMEOVER') return;
+            ctx.clearRect(0, 0, width, height);
+            
+            // Background city
+            ctx.fillStyle = '#f1f5f9';
+            const cityOff = height - 300 + cameraY * 0.2;
+            cityBuildings.forEach(b => ctx.fillRect(b.x, cityOff + (300 - b.h), b.w, b.h));
+
+            ctx.save();
+            if (shake > 0) { ctx.translate((Math.random()-0.5)*shake, (Math.random()-0.5)*shake); shake *= 0.9; }
+            if (score > 5) {
+                const angle = Math.sin(Date.now() * 0.002) * Math.min(score * 0.002, 0.05);
+                ctx.translate(width/2, height/2); ctx.rotate(angle); ctx.translate(-width/2, -height/2);
+            }
+
+            if (gameState === 'PLAYING' || gameState === 'DROPPING') {
+                if (checkClap()) triggerDrop();
+                if (gameState === 'PLAYING') {
+                    currentBlock.updateSwing();
+                    currentBlock.y = blocks[blocks.length-1].y - 200;
+                } else {
+                    currentBlock.y += GRAVITY;
+                    const prev = blocks[blocks.length-1];
+                    if (currentBlock.y + currentBlock.h >= prev.y) {
+                        const res = checkLanding();
+                        if (res === 'MISS') {
+                            if (currentBlock.y > height + 100) {
+                                shake = 15; playSound('miss'); lives--;
+                                if (lives <= 0) { gameOver("You missed the tower!"); }
+                                else { nextStep(); }
+                            }
+                        } else if (res === 'TOPPLE') {
+                            currentBlock.angle += 0.1; currentBlock.x += (currentBlock.x < width/2 ? -5 : 5);
+                            if (currentBlock.y > height + 200) { playSound('miss'); gameOver("The tower toppled over!"); }
+                        } else {
+                            if (res === 'PERFECT') {
+                                playSound('perfect');
+                                confetti({ particleCount: 40, spread: 60, origin: { x: (currentBlock.x + blockWidth/2)/width, y: (currentBlock.y - cameraY)/height } });
+                            } else { playSound('land'); }
+                            blocks.push(currentBlock); score++; nextStep();
+                        }
+                    }
+                }
+            }
+
+            cameraY += ((score > 2 ? blocks[blocks.length-1].y - height*0.6 : 0) - cameraY) * 0.1;
+
+            if (gameState === 'PLAYING') {
+                ctx.beginPath(); ctx.moveTo(currentBlock.x + blockWidth/2, -1000); ctx.lineTo(currentBlock.x + blockWidth/2, currentBlock.y - cameraY);
+                ctx.strokeStyle = 'rgba(0,0,0,0.2)'; ctx.lineWidth = 3; ctx.stroke();
+            }
+
+            blocks.forEach(b => b.draw());
+            if (gameState !== 'GAMEOVER') currentBlock.draw();
+            ctx.restore();
+            updateUI();
+            requestAnimationFrame(loop);
+        }
+
+        function checkLanding() {
+            const prev = blocks[blocks.length-1];
+            if (currentBlock.x + currentBlock.w < prev.x || currentBlock.x > prev.x + prev.w) return 'MISS';
+            currentBlock.y = prev.y - BLOCK_HEIGHT;
+            const newMass = towerMass + 1;
+            const newCoM = (towerMass * stackCenterOfMass + (currentBlock.x + blockWidth/2)) / newMass;
+            if (Math.abs(newCoM - width/2) > (blockWidth/2 + 5)) return 'TOPPLE';
+            towerMass = newMass; stackCenterOfMass = newCoM;
+            return Math.abs(currentBlock.x - prev.x) < 5 ? 'PERFECT' : 'LANDED';
+        }
+
+        function triggerDrop() { if (gameState === 'PLAYING') { gameState = 'DROPPING'; playSound('drop'); } }
+
+        function nextStep() {
+            if (gameMode === 'SOLO') { spawnBlock(); gameState = 'PLAYING'; }
+            else {
+                movesInTurn++;
+                if (movesInTurn >= 3) { gameState = 'PAUSED'; document.getElementById('turn-modal').classList.remove('hidden'); }
+                else { spawnBlock(); gameState = 'PLAYING'; }
+            }
+        }
+
+        function confirmTurn() {
+            currentPlayer = currentPlayer === 1 ? 2 : 1; movesInTurn = 0;
+            document.getElementById('turn-modal').classList.add('hidden');
+            spawnBlock(); gameState = 'PLAYING';
+        }
+
+        function gameOver(msg) {
+            gameState = 'GAMEOVER'; document.getElementById('game-over').classList.remove('hidden');
+            document.getElementById('over-msg').innerText = msg;
+            document.getElementById('final-score').innerText = score;
+        }
+
+        function goHome() { gameState = 'START'; updateUI(); }
+
+        function setMode(m) {
+            gameMode = m;
+            document.getElementById('btn-solo').className = `mode-btn p-3 rounded-xl border-2 transition-all ${m==='SOLO' ? 'border-sky-500 bg-sky-50' : 'border-slate-100 bg-white'}`;
+            document.getElementById('btn-multi').className = `mode-btn p-3 rounded-xl border-2 transition-all ${m==='MULTI' ? 'border-sky-500 bg-sky-50' : 'border-slate-100 bg-white'}`;
+        }
+
+        function setDiff(d) {
+            difficulty = d;
+            document.getElementById('btn-easy').className = `flex-1 py-2 rounded-lg text-xs font-bold transition-all ${d==='EASY' ? 'bg-white shadow text-sky-600' : 'text-slate-500'}`;
+            document.getElementById('btn-normal').className = `flex-1 py-2 rounded-lg text-xs font-bold transition-all ${d==='NORMAL' ? 'bg-white shadow text-sky-600' : 'text-slate-500'}`;
+        }
+
+        function updateUI() {
+            document.getElementById('start-screen').classList.toggle('hidden', gameState !== 'START');
+            document.getElementById('hud').classList.toggle('hidden', gameState === 'START' || gameState === 'GAMEOVER');
+            document.getElementById('game-over').classList.toggle('hidden', gameState !== 'GAMEOVER');
+            if (gameState !== 'START') {
+                document.getElementById('score-val').innerText = score;
+                const container = document.getElementById('hearts-container');
+                container.innerHTML = Array(maxLives).fill(0).map((_, i) => `<span class="text-2xl transition-all ${i < lives ? '' : 'grayscale opacity-30 scale-75'}">❤️</span>`).join('');
+                document.getElementById('multi-panel').classList.toggle('hidden', gameMode === 'SOLO');
+                if (gameMode === 'MULTI') {
+                    document.getElementById('p-icon').innerText = currentPlayer === 1 ? '🔴' : '🔵';
+                    document.getElementById('p-name').innerText = `Player ${currentPlayer}`;
+                    document.getElementById('p-name').className = `font-bold ${currentPlayer === 1 ? 'text-red-500' : 'text-sky-500'}`;
+                    document.getElementById('moves-val').innerText = 3 - movesInTurn;
+                }
+            }
+        }
+
+        // --- INPUTS ---
+        window.onresize = () => { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; };
+        window.onkeydown = (e) => { if (e.code === 'Space') triggerDrop(); };
+        document.getElementById('mic-sens').oninput = (e) => { micSensitivity = e.target.value; document.getElementById('sens-display').innerText = micSensitivity + '%'; document.getElementById('mic-threshold').style.left = (100-micSensitivity)+'%'; };
+        document.getElementById('lives-setup').oninput = (e) => { document.getElementById('lives-setup-val').innerText = e.target.value; };
+
+        // City Gen
+        cityBuildings = Array.from({length: Math.ceil(window.innerWidth/60)}, (_, i) => ({ x: i*60+Math.random()*20, w: 40+Math.random()*40, h: 100+Math.random()*200 }));
+    </script>
+</body>
+</html>import React, { useState, useEffect, useRef, useCallback } from 'react';
 import confetti from 'canvas-confetti';
 
 // --- Constants ---
