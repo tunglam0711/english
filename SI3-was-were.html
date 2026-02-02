@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Was vs Were: Space Tilt Challenge</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- MediaPipe Face Mesh & Camera Utils -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <!-- Fonts -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Fredoka:wght@400;600&display=swap');
+
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background-color: #0f172a;
+            color: white;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .title-font {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Mirrored Camera Feed */
+        .mirror-feed {
+            transform: scaleX(-1);
+        }
+
+        /* Star Background Animation */
+        .stars {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
+            z-index: -1;
+            overflow: hidden;
+        }
+        
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 2s infinite ease-in-out;
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 0.3; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.2); }
+            100% { opacity: 0.3; transform: scale(0.8); }
+        }
+
+        /* Card Interactions */
+        .option-card {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 4px solid #334155;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        }
+
+        /* The Yellow Frame for selection */
+        .option-card.selected {
+            border-color: #fbbf24; /* Amber */
+            box-shadow: 0 0 40px rgba(251, 191, 36, 0.6);
+            transform: scale(1.02);
+            background-color: rgba(251, 191, 36, 0.1);
+        }
+
+        .option-card.correct {
+            background-color: #22c55e; /* Green */
+            border-color: #4ade80;
+            transform: scale(1.05);
+            box-shadow: 0 0 40px rgba(34, 197, 94, 0.6);
+        }
+
+        .option-card.wrong {
+            background-color: #ef4444; /* Red */
+            border-color: #f87171;
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px) rotate(-2deg); }
+            75% { transform: translateX(8px) rotate(2deg); }
+        }
+
+        /* Camera Container */
+        .cam-wrapper {
+            position: relative;
+            border-radius: 9999px;
+            overflow: hidden;
+            box-shadow: 0 0 40px rgba(6, 182, 212, 0.4);
+            border: 4px solid #06b6d4;
+        }
+        
+        /* Guide Lines Overlay on Camera */
+        .cam-guide {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 2px; height: 40px;
+            background: rgba(255,255,255,0.3);
+            z-index: 10;
+        }
+
+        /* Timer Bar */
+        .timer-container {
+            width: 100%;
+            height: 12px;
+            background-color: #1e293b;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid #334155;
+        }
+        .timer-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #22d3ee, #818cf8);
+            width: 100%;
+            transition: width 1s linear, opacity 0.3s ease;
+        }
+
+        /* Range Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: #22d3ee;
+            cursor: pointer;
+            margin-top: -10px;
+            box-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #334155;
+            border-radius: 2px;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+    </style>
+</head>
+<body class="h-screen w-full flex flex-col items-center justify-center relative">
+
+    <!-- Background Stars (Generated by JS) -->
+    <div id="stars-container" class="stars"></div>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-900">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-cyan-400 mb-6"></div>
+        <h2 class="text-3xl title-font text-cyan-400">Loading Neural Link...</h2>
+    </div>
+
+    <!-- Intro Screen (Camera Permission) -->
+    <div id="intro-screen" class="hidden absolute inset-0 z-40 flex flex-col items-center justify-center bg-slate-900/95 backdrop-blur-sm p-8 text-center transition-opacity duration-500">
+        <h1 class="text-5xl md:text-7xl title-font text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500 mb-6 drop-shadow-[0_0_15px_rgba(34,211,238,0.5)]">
+            WAS vs WERE
+        </h1>
+        <h2 class="text-2xl text-white mb-8 title-font tracking-widest">HEAD TILT CHALLENGE</h2>
+        
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-600 max-w-lg w-full mb-8 shadow-2xl">
+            <div class="flex items-center justify-center gap-8 mb-4">
+                <div class="text-center">
+                    <div class="text-5xl mb-2">👉</div>
+                    <div class="text-cyan-300 font-bold">Tilt Right</div>
+                    <div class="text-sm text-slate-400">Choose Option A</div>
+                </div>
+                <div class="h-12 w-px bg-slate-600"></div>
+                <div class="text-center">
+                    <div class="text-5xl mb-2">👈</div>
+                    <div class="text-cyan-300 font-bold">Tilt Left</div>
+                    <div class="text-sm text-slate-400">Choose Option B</div>
+                </div>
+            </div>
+            <p class="text-yellow-400 text-sm font-bold">Tilt to select (Yellow). Wait for timer!</p>
+        </div>
+
+        <button id="enable-cam-btn" class="group relative px-8 py-4 bg-cyan-600 hover:bg-cyan-500 rounded-full text-2xl font-bold transition-all transform hover:scale-105 shadow-[0_0_20px_rgba(6,182,212,0.6)] overflow-hidden">
+            <span class="relative z-10">ENABLE CAMERA</span>
+            <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+        </button>
+    </div>
+
+    <!-- Combined Setup Screen -->
+    <div id="setup-screen" class="hidden absolute inset-0 z-40 flex flex-col items-center justify-center bg-slate-900/95 backdrop-blur-sm p-8 text-center overflow-y-auto">
+        <h1 class="text-4xl md:text-5xl title-font text-white mb-8">Game Setup</h1>
+        
+        <div class="w-full max-w-2xl flex flex-col gap-10">
+            
+            <!-- Timer Section -->
+            <div class="bg-slate-800/80 p-6 rounded-2xl border border-slate-600 shadow-xl">
+                <h2 class="text-2xl text-cyan-400 mb-4 font-bold">Timer Duration</h2>
+                <div class="flex items-center justify-between gap-4 mb-2">
+                    <span class="text-slate-400 font-mono">1s</span>
+                    <input type="range" min="1" max="20" value="10" class="flex-grow h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer" id="timer-slider" oninput="updateTimerDisplay(this.value)">
+                    <span class="text-slate-400 font-mono">20s</span>
+                </div>
+                <div class="text-center">
+                    <span id="timer-display" class="text-5xl font-bold text-white title-font">10</span>
+                    <span id="timer-unit" class="text-xl text-slate-400 ml-1">seconds</span>
+                </div>
+            </div>
+
+            <!-- Question Count Section -->
+            <div class="bg-slate-800/80 p-6 rounded-2xl border border-slate-600 shadow-xl">
+                <h2 class="text-2xl text-cyan-400 mb-6 font-bold">Number of Questions</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <button onclick="selectLength(5)" class="p-4 bg-slate-700 border-2 border-cyan-500/50 hover:border-cyan-400 hover:bg-cyan-900/30 rounded-xl transition-all hover:scale-105 group">
+                        <span class="text-3xl font-bold text-white group-hover:text-cyan-300">5</span>
+                    </button>
+                    <button onclick="selectLength(10)" class="p-4 bg-slate-700 border-2 border-cyan-500/50 hover:border-cyan-400 hover:bg-cyan-900/30 rounded-xl transition-all hover:scale-105 group">
+                        <span class="text-3xl font-bold text-white group-hover:text-cyan-300">10</span>
+                    </button>
+                    <button onclick="selectLength(15)" class="p-4 bg-slate-700 border-2 border-cyan-500/50 hover:border-cyan-400 hover:bg-cyan-900/30 rounded-xl transition-all hover:scale-105 group">
+                        <span class="text-3xl font-bold text-white group-hover:text-cyan-300">15</span>
+                    </button>
+                    <button onclick="selectLength(20)" class="p-4 bg-slate-700 border-2 border-cyan-500/50 hover:border-cyan-400 hover:bg-cyan-900/30 rounded-xl transition-all hover:scale-105 group">
+                        <span class="text-3xl font-bold text-white group-hover:text-cyan-300">20</span>
+                    </button>
+                </div>
+                <p class="text-slate-400 text-sm mt-4">Clicking a number starts the game instantly!</p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- End Screen -->
+    <div id="end-screen" class="hidden absolute inset-0 z-40 flex flex-col items-center justify-center bg-slate-900/95 backdrop-blur-sm p-8 text-center">
+        <h1 class="text-6xl title-font text-yellow-400 mb-4">MISSION COMPLETE</h1>
+        <div class="text-8xl mb-6">🏆</div>
+        <p class="text-2xl text-white mb-2">Final Score</p>
+        <p class="text-6xl font-bold text-cyan-400 mb-8" id="final-score">0</p>
+        <button onclick="location.reload()" class="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-full text-xl font-bold transition-transform hover:scale-105">
+            Play Again
+        </button>
+    </div>
+
+    <!-- Main Game UI -->
+    <div id="game-ui" class="hidden w-full h-full max-w-7xl mx-auto flex flex-col p-4 md:p-8 relative">
+        
+        <!-- Quit Button (Top Left) -->
+        <button onclick="quitGame()" class="absolute top-4 md:top-8 left-4 md:left-8 z-50 bg-red-600/80 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-lg border border-red-400 shadow-lg transition-all hover:scale-105">
+            QUIT
+        </button>
+
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6 pl-20 md:pl-24"> 
+            <div class="bg-slate-800/80 rounded-xl px-4 py-2 border border-slate-600 shadow-lg">
+                <span class="text-slate-400 text-xs uppercase tracking-wider block">Progress</span>
+                <span class="text-xl font-bold text-white"><span id="q-current">1</span> / <span id="q-total">--</span></span>
+            </div>
+            
+            <div class="bg-slate-800/80 rounded-xl px-6 py-2 border border-slate-600 shadow-lg min-w-[120px] text-center">
+                <span class="text-slate-400 text-xs uppercase tracking-wider block">Score</span>
+                <span class="text-3xl font-bold text-yellow-400" id="score-display">0</span>
+            </div>
+        </div>
+
+        <!-- Timer -->
+        <div class="timer-container">
+            <div id="timer-bar" class="timer-bar"></div>
+        </div>
+
+        <!-- Question Box -->
+        <div class="w-full bg-slate-800/90 backdrop-blur-md rounded-2xl p-6 md:p-8 mb-4 text-center border-2 border-slate-600 shadow-2xl relative z-10 min-h-[160px] flex flex-col justify-center items-center">
+            <h2 id="question-text" class="text-2xl md:text-4xl font-bold leading-relaxed text-white">
+                Initializing...
+            </h2>
+        </div>
+
+        <!-- Interactive Area -->
+        <div class="flex-grow flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8 w-full">
+            
+            <!-- Option A (Left) -->
+            <div id="card-a" class="option-card w-full md:w-1/3 h-32 md:h-64 bg-slate-700/80 rounded-2xl flex flex-col items-center justify-center relative overflow-hidden group">
+                <div class="absolute top-2 left-4 text-slate-500 font-bold text-xl md:text-2xl group-hover:text-cyan-400 transition-colors">A</div>
+                <div class="text-2xl md:text-4xl font-bold text-cyan-300 text-center px-2" id="text-a">...</div>
+            </div>
+
+            <!-- Camera Feed (Center) -->
+            <div class="relative flex-shrink-0">
+                <div class="cam-wrapper w-40 h-40 md:w-56 md:h-56">
+                    <video id="input_video" class="w-full h-full object-cover mirror-feed" playsinline></video>
+                    <!-- Visual Angle Gauge -->
+                    <div id="tilt-gauge" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-slate-700 rounded-full overflow-hidden">
+                        <div id="tilt-indicator" class="h-full w-2 bg-yellow-400 absolute left-1/2 transform -translate-x-1/2 transition-all duration-75"></div>
+                    </div>
+                </div>
+                <div class="text-center mt-2 text-slate-400 text-sm font-mono tracking-widest uppercase" id="status-text">Neutral</div>
+            </div>
+
+            <!-- Option B (Right) -->
+            <div id="card-b" class="option-card w-full md:w-1/3 h-32 md:h-64 bg-slate-700/80 rounded-2xl flex flex-col items-center justify-center relative overflow-hidden group">
+                <div class="absolute top-2 right-4 text-slate-500 font-bold text-xl md:text-2xl group-hover:text-cyan-400 transition-colors">B</div>
+                <div class="text-2xl md:text-4xl font-bold text-cyan-300 text-center px-2" id="text-b">...</div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Audio System ---
+        let audioCtx;
+        
+        function initAudio() {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if(!audioCtx) audioCtx = new AudioContext();
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now); 
+                osc.frequency.exponentialRampToValueAtTime(1046.5, now + 0.1); 
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now);
+                osc.stop(now + 0.5);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.linearRampToValueAtTime(80, now + 0.4);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } else if (type === 'win') {
+                const notes = [523.25, 659.25, 783.99, 1046.50]; 
+                notes.forEach((freq, i) => {
+                    const noteOsc = audioCtx.createOscillator();
+                    const noteGain = audioCtx.createGain();
+                    noteOsc.connect(noteGain);
+                    noteGain.connect(audioCtx.destination);
+                    noteOsc.type = 'triangle';
+                    noteOsc.frequency.value = freq;
+                    const startTime = now + (i * 0.12);
+                    noteGain.gain.setValueAtTime(0.2, startTime);
+                    noteGain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.4);
+                    noteOsc.start(startTime);
+                    noteOsc.stop(startTime + 0.4);
+                });
+            }
+        }
+
+        // --- 2. Game Data (Was vs Were) ---
+        const allQuestions = [
+            { q: "I __________ very hungry this morning.", options: ["was", "were"], correct: 0 },
+            { q: "You __________ the best player on the team.", options: ["was", "were"], correct: 1 },
+            { q: "Anna __________ a nurse for ten years.", options: ["was", "were"], correct: 0 },
+            { q: "There __________ a loud dog next door.", options: ["was", "were"], correct: 0 },
+            { q: "He __________ at the supermarket.", options: ["was", "were"], correct: 0 },
+            { q: "Sarah and I __________ in the library.", options: ["was", "were"], correct: 1 },
+            { q: "You __________ late for the movie.", options: ["was", "were"], correct: 1 },
+            { q: "There __________ many cars on the road.", options: ["was", "were"], correct: 1 },
+            { q: "I __________ happy to see my friends.", options: ["was", "were"], correct: 0 },
+            { q: "Peter and Paul __________ brothers.", options: ["was", "were"], correct: 1 },
+            { q: "She __________ not at home yesterday.", options: ["was", "were"], correct: 0 },
+            { q: "There __________ a beautiful flower in the garden.", options: ["was", "were"], correct: 0 },
+            { q: "He __________ my best friend.", options: ["was", "were"], correct: 0 },
+            { q: "The baby __________ asleep in the crib.", options: ["was", "were"], correct: 0 },
+            { q: "You __________ very kind to me.", options: ["was", "were"], correct: 1 },
+            { q: "There __________ three birds on the roof.", options: ["was", "were"], correct: 1 },
+            { q: "I __________ sick last week.", options: ["was", "were"], correct: 0 },
+            { q: "Mom and Dad __________ in the kitchen.", options: ["was", "were"], correct: 1 },
+            { q: "She __________ at the park.", options: ["was", "were"], correct: 0 },
+            { q: "There __________ a lot of rain yesterday.", options: ["was", "were"], correct: 0 }
+        ];
+
+        let activeQuestions = [];
+
+        // --- 3. Game State ---
+        let currentQ = 0;
+        let score = 0;
+        let isGameActive = false;
+        let isLocked = false; 
+        
+        // Selection State
+        let currentSelection = null; // 'A' or 'B' or null
+        const TILT_THRESHOLD = 15; 
+        
+        // Timer Variables
+        let timeLimitPerQuestion = 10; 
+        let currentTimerValue = 0;
+        let timerInterval = null;
+
+        // --- 4. UI Elements ---
+        const els = {
+            loading: document.getElementById('loading-screen'),
+            intro: document.getElementById('intro-screen'),
+            setupScreen: document.getElementById('setup-screen'),
+            game: document.getElementById('game-ui'),
+            end: document.getElementById('end-screen'),
+            qText: document.getElementById('question-text'),
+            cardA: document.getElementById('card-a'),
+            cardB: document.getElementById('card-b'),
+            textA: document.getElementById('text-a'),
+            textB: document.getElementById('text-b'),
+            score: document.getElementById('score-display'),
+            qCurr: document.getElementById('q-current'),
+            qTot: document.getElementById('q-total'),
+            status: document.getElementById('status-text'),
+            video: document.getElementById('input_video'),
+            enableBtn: document.getElementById('enable-cam-btn'),
+            tiltIndicator: document.getElementById('tilt-indicator'),
+            timerBar: document.getElementById('timer-bar'),
+            timerDisplay: document.getElementById('timer-display'),
+            timerUnit: document.getElementById('timer-unit')
+        };
+
+        // --- 5. Initialization ---
+        window.onload = () => {
+            initStars();
+            els.loading.style.display = 'none';
+            els.intro.style.display = 'flex';
+        };
+
+        function initStars() {
+            const container = document.getElementById('stars-container');
+            for(let i=0; i<50; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.width = Math.random() * 3 + 'px';
+                star.style.height = star.style.width;
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                container.appendChild(star);
+            }
+        }
+
+        els.enableBtn.addEventListener('click', async () => {
+            els.enableBtn.innerText = "Accessing Camera...";
+            els.enableBtn.disabled = true;
+            initAudio(); 
+            await initCamera();
+        });
+
+        // --- 6. MediaPipe Setup ---
+        const faceMesh = new FaceMesh({locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+        }});
+
+        faceMesh.setOptions({
+            maxNumFaces: 1,
+            refineLandmarks: true,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+
+        faceMesh.onResults(onResults);
+
+        async function initCamera() {
+            const camera = new Camera(els.video, {
+                onFrame: async () => {
+                    await faceMesh.send({image: els.video});
+                },
+                width: 640,
+                height: 480
+            });
+            await camera.start();
+            
+            // Go to Setup Screen
+            els.intro.style.display = 'none';
+            els.setupScreen.style.display = 'flex';
+        }
+
+        // --- 7. Mode & Difficulty Selection ---
+        function updateTimerDisplay(val) {
+            timeLimitPerQuestion = parseInt(val);
+            els.timerDisplay.innerText = val;
+            els.timerUnit.innerText = (val === '1') ? 'second' : 'seconds';
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function selectLength(count) {
+            // Shuffle and slice questions
+            const shuffled = shuffleArray([...allQuestions]);
+            activeQuestions = shuffled.slice(0, count);
+            
+            // Start Game
+            els.setupScreen.style.display = 'none';
+            els.game.style.display = 'flex';
+            startGame();
+        }
+
+        function quitGame() {
+            if (confirm("Are you sure you want to quit?")) {
+                location.reload();
+            }
+        }
+
+        // --- 8. Timer Logic ---
+        function startTimer() {
+            clearInterval(timerInterval);
+            currentTimerValue = timeLimitPerQuestion;
+            
+            // Reset visual bar
+            els.timerBar.style.transition = 'none';
+            els.timerBar.style.width = '100%';
+            els.timerBar.style.opacity = '1';
+            
+            // Force reflow
+            void els.timerBar.offsetWidth;
+
+            // Start animation
+            els.timerBar.style.transition = `width ${timeLimitPerQuestion}s linear`;
+            els.timerBar.style.width = '0%';
+
+            timerInterval = setInterval(() => {
+                currentTimerValue--;
+                if (currentTimerValue <= 0) {
+                    clearInterval(timerInterval);
+                    handleTimeOut(); // TIME'S UP! Check answer now.
+                }
+            }, 1000);
+        }
+
+        function handleTimeOut() {
+            // This function triggers when the timer hits zero.
+            // It checks the CURRENT selection and validates it.
+            if (isLocked) return;
+            isLocked = true;
+            
+            const q = activeQuestions[currentQ];
+            let userSelectedIndex = -1;
+
+            if (currentSelection === 'A') userSelectedIndex = 0;
+            if (currentSelection === 'B') userSelectedIndex = 1;
+
+            const isCorrect = userSelectedIndex === q.correct;
+            const selectedCard = userSelectedIndex === 0 ? els.cardA : (userSelectedIndex === 1 ? els.cardB : null);
+
+            // Logic:
+            // 1. If user selected Correct: Turn Green, Score++
+            // 2. If user selected Wrong: Turn Red, Show Correct Green
+            // 3. If user selected Nothing: Show Correct Green
+
+            if (selectedCard) {
+                // Clear the yellow selection style first
+                selectedCard.classList.remove('selected');
+                
+                if (isCorrect) {
+                    score += 10;
+                    selectedCard.classList.add('correct');
+                    fireConfetti();
+                    playSound('correct');
+                } else {
+                    selectedCard.classList.add('wrong');
+                    playSound('wrong');
+                }
+            } else {
+                // No selection made
+                playSound('wrong');
+            }
+
+            // Always show the correct answer visually if the user was wrong (or did nothing)
+            if (!isCorrect) {
+                 setTimeout(() => {
+                    const correctCard = q.correct === 0 ? els.cardA : els.cardB;
+                    correctCard.classList.add('correct');
+                }, 200);
+            }
+
+            els.score.innerText = score;
+
+            setTimeout(() => {
+                cleanupClasses();
+                currentQ++;
+                loadQuestion();
+            }, 2500);
+        }
+
+        // --- 9. Tracking Loop ---
+        function onResults(results) {
+            // Even if locked (during reveal), we stop updating selection
+            if (!isGameActive || isLocked || !results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) return;
+
+            const landmarks = results.multiFaceLandmarks[0];
+            const leftEye = landmarks[33];
+            const rightEye = landmarks[263];
+
+            // Angle Calculation
+            const dx = leftEye.x - rightEye.x;
+            const dy = leftEye.y - rightEye.y;
+            let angle = Math.atan2(dy, dx) * (180 / Math.PI);
+            
+            updateTiltUI(angle);
+            processSelection(angle);
+        }
+
+        function updateTiltUI(angle) {
+            const maxTilt = 45; 
+            let clamped = Math.max(-maxTilt, Math.min(maxTilt, angle));
+            let uiLeftPercent = 50 + ((clamped / maxTilt) * 50);
+            
+            els.tiltIndicator.style.left = uiLeftPercent + '%';
+
+            if (angle < -TILT_THRESHOLD) {
+                els.status.innerText = "Selecting A...";
+                els.status.style.color = "#fbbf24";
+            } else if (angle > TILT_THRESHOLD) {
+                els.status.innerText = "Selecting B...";
+                els.status.style.color = "#fbbf24";
+            } else {
+                els.status.innerText = "Center";
+                els.status.style.color = "#94a3b8";
+            }
+        }
+
+        function processSelection(angle) {
+            // Update the CURRENT selection based on tilt
+            // This does NOT lock the answer in. It just highlights it visually (Yellow).
+            // Validation happens in handleTimeOut()
+            
+            let newSelection = null;
+            
+            if (angle < -TILT_THRESHOLD) newSelection = 'A';
+            else if (angle > TILT_THRESHOLD) newSelection = 'B';
+            
+            // Only update DOM if state changes to avoid thrashing
+            if (newSelection !== currentSelection) {
+                currentSelection = newSelection;
+                updateSelectionVisuals();
+            }
+        }
+
+        function updateSelectionVisuals() {
+            // Reset both
+            els.cardA.classList.remove('selected');
+            els.cardB.classList.remove('selected');
+
+            // Apply Yellow Frame
+            if (currentSelection === 'A') {
+                els.cardA.classList.add('selected');
+            } else if (currentSelection === 'B') {
+                els.cardB.classList.add('selected');
+            }
+        }
+
+        // --- 10. Game Logic ---
+        function startGame() {
+            score = 0;
+            currentQ = 0;
+            els.qTot.innerText = activeQuestions.length;
+            isGameActive = true;
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            isLocked = false;
+            currentSelection = null;
+            updateSelectionVisuals();
+            
+            if (currentQ >= activeQuestions.length) {
+                endGame();
+                return;
+            }
+
+            const q = activeQuestions[currentQ];
+            els.qText.innerText = q.q;
+            els.textA.innerText = "a. " + q.options[0];
+            els.textB.innerText = "b. " + q.options[1];
+            
+            els.qCurr.innerText = currentQ + 1;
+            els.score.innerText = score;
+
+            startTimer();
+        }
+
+        function cleanupClasses() {
+            els.cardA.classList.remove('correct', 'wrong', 'selected');
+            els.cardB.classList.remove('correct', 'wrong', 'selected');
+        }
+
+        function endGame() {
+            isGameActive = false;
+            clearInterval(timerInterval);
+            els.game.style.display = 'none';
+            els.end.style.display = 'flex';
+            document.getElementById('final-score').innerText = score;
+            fireConfetti();
+            playSound('win'); 
+            setTimeout(fireConfetti, 500);
+            setTimeout(fireConfetti, 1000);
+        }
+
+        function fireConfetti() {
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#22d3ee', '#fbbf24', '#ffffff']
+            });
+        }
+    </script>
+</body>
+</html>
