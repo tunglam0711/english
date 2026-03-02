@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IOE Stress Pattern Practice</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .option-btn {
+            transition: all 0.2s ease;
+        }
+        .option-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .option-btn:disabled {
+            cursor: not-allowed;
+        }
+        
+        /* Hiệu ứng rung lắc khi sai */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px) rotate(-1deg); }
+            75% { transform: translateX(5px) rotate(1deg); }
+        }
+        .shake { animation: shake 0.4s ease-in-out; }
+        
+        /* Hiệu ứng nảy khi đúng */
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .pop { animation: pop 0.3s ease-in-out; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="app" class="w-full max-w-2xl bg-white rounded-2xl shadow-xl overflow-hidden relative">
+        
+        <!-- Header -->
+        <div class="bg-indigo-600 text-white p-6 text-center">
+            <h1 class="text-2xl md:text-3xl font-bold">English Stress Pattern</h1>
+            <p class="text-indigo-200 mt-2 text-sm md:text-base">IOE Grade 5 Practice</p>
+        </div>
+
+        <!-- Main Menu Screen -->
+        <div id="menu-screen" class="p-8 text-center block">
+            <h2 class="text-xl font-semibold text-gray-800 mb-6">Choose your challenge</h2>
+            <div class="space-y-4">
+                <button onclick="startGame(10, 2)" class="w-full md:w-2/3 mx-auto block py-3 px-6 bg-indigo-50 text-indigo-700 font-medium rounded-lg hover:bg-indigo-100 transition border border-indigo-200">
+                    10 Questions (2 Minutes)
+                </button>
+                <button onclick="startGame(15, 3)" class="w-full md:w-2/3 mx-auto block py-3 px-6 bg-indigo-50 text-indigo-700 font-medium rounded-lg hover:bg-indigo-100 transition border border-indigo-200">
+                    15 Questions (3 Minutes)
+                </button>
+                <button onclick="startGame(20, 4)" class="w-full md:w-2/3 mx-auto block py-3 px-6 bg-indigo-50 text-indigo-700 font-medium rounded-lg hover:bg-indigo-100 transition border border-indigo-200">
+                    20 Questions (4 Minutes)
+                </button>
+            </div>
+            <div class="mt-8 text-sm text-gray-500">
+                Questions are randomly selected from a bank of 60 questions.
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="p-6 md:p-8 hidden">
+            <!-- Game Header (Timer, Score, Progress) -->
+            <div class="flex justify-between items-center mb-6 border-b pb-4">
+                <div class="flex items-center text-gray-700 font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Question: <span id="question-progress" class="ml-1 text-indigo-600">1/10</span>
+                </div>
+                <div id="timer-display" class="flex items-center font-bold text-lg text-gray-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span id="time-left">02:00</span>
+                </div>
+            </div>
+
+            <!-- Question -->
+            <div class="mb-6">
+                <h3 class="text-lg md:text-xl font-semibold text-gray-800 text-center">
+                    Choose the word with a different stress pattern:
+                </h3>
+            </div>
+
+            <!-- Options -->
+            <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Buttons will be injected here via JS -->
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="p-8 text-center hidden">
+            <h2 id="result-title" class="text-3xl font-bold text-gray-800 mb-2">Time's Up!</h2>
+            <p class="text-gray-600 mb-6">Here is your final score</p>
+            
+            <div class="inline-block bg-indigo-50 border border-indigo-100 rounded-full w-32 h-32 flex items-center justify-center mb-8 mx-auto shadow-inner">
+                <span id="final-score" class="text-4xl font-bold text-indigo-600">0/10</span>
+            </div>
+
+            <button onclick="showMenu()" class="w-full md:w-1/2 mx-auto block py-3 px-6 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition shadow-md">
+                Play Again
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Web Audio API Setup ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioContext();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            if (type === 'correct') {
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.2);
+            } else if (type === 'wrong') {
+                oscillator.type = 'square';
+                oscillator.frequency.setValueAtTime(150, audioCtx.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.2);
+                gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.2);
+            } else if (type === 'win') {
+                oscillator.type = 'triangle';
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+                    oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime + (i * 0.1));
+                });
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.5);
+            }
+        }
+
+        // --- 60 Question Bank (Easier Grade 5 Level) ---
+        const questionBank = [
+            { options: ["A. water", "B. doctor", "C. enjoy", "D. teacher"], answer: 2 },
+            { options: ["A. begin", "B. student", "C. return", "D. invite"], answer: 1 },
+            { options: ["A. animal", "B. elephant", "C. banana", "D. crocodile"], answer: 2 },
+            { options: ["A. morning", "B. evening", "C. season", "D. afternoon"], answer: 3 },
+            { options: ["A. polite", "B. yellow", "C. purple", "D. orange"], answer: 0 },
+            { options: ["A. visit", "B. happen", "C. decide", "D. finish"], answer: 2 },
+            { options: ["A. father", "B. agree", "C. mother", "D. sister"], answer: 1 },
+            { options: ["A. guitar", "B. machine", "C. police", "D. answer"], answer: 3 },
+            { options: ["A. address", "B. village", "C. city", "D. mountain"], answer: 0 },
+            { options: ["A. beautiful", "B. dangerous", "C. important", "D. wonderful"], answer: 2 },
+            { options: ["A. tonight", "B. paper", "C. table", "D. window"], answer: 0 },
+            { options: ["A. open", "B. repeat", "C. listen", "D. travel"], answer: 1 },
+            { options: ["A. tomorrow", "B. family", "C. holiday", "D. memory"], answer: 0 },
+            { options: ["A. music", "B. picture", "C. story", "D. advice"], answer: 3 },
+            { options: ["A. lesson", "B. present", "C. balloon", "D. Sunday"], answer: 2 },
+            { options: ["A. library", "B. tomato", "C. potato", "D. umbrella"], answer: 0 },
+            { options: ["A. twenty", "B. fifty", "C. eleven", "D. sixty"], answer: 2 },
+            { options: ["A. supermarket", "B. hospital", "C. cinema", "D. museum"], answer: 3 },
+            { options: ["A. July", "B. summer", "C. winter", "D. autumn"], answer: 0 },
+            { options: ["A. heavy", "B. dirty", "C. aloud", "D. happy"], answer: 2 },
+            { options: ["A. under", "B. about", "C. above", "D. behind"], answer: 0 },
+            { options: ["A. Friday", "B. Monday", "C. Thursday", "D. today"], answer: 3 },
+            { options: ["A. mistake", "B. question", "C. answer", "D. problem"], answer: 0 },
+            { options: ["A. difficult", "B. exciting", "C. delicious", "D. expensive"], answer: 0 },
+            { options: ["A. History", "B. English", "C. Vietnam", "D. Science"], answer: 2 },
+            { options: ["A. mechanic", "B. worker", "C. farmer", "D. driver"], answer: 0 },
+            { options: ["A. never", "B. today", "C. often", "D. always"], answer: 1 },
+            { options: ["A. tiger", "B. lion", "C. giraffe", "D. monkey"], answer: 2 },
+            { options: ["A. badminton", "B. volleyball", "C. gymnastics", "D. basketball"], answer: 2 },
+            { options: ["A. karate", "B. tennis", "C. football", "D. judo"], answer: 0 },
+            { options: ["A. colour", "B. drawing", "C. design", "D. painting"], answer: 2 },
+            { options: ["A. awake", "B. hungry", "C. thirsty", "D. sleepy"], answer: 0 },
+            { options: ["A. body", "B. moustache", "C. finger", "D. shoulder"], answer: 1 },
+            { options: ["A. clever", "B. stupid", "C. polite", "D. careful"], answer: 2 },
+            { options: ["A. alone", "B. quiet", "C. noisy", "D. funny"], answer: 0 },
+            { options: ["A. allow", "B. borrow", "C. swallow", "D. follow"], answer: 0 },
+            { options: ["A. pocket", "B. jacket", "C. balloon", "D. trousers"], answer: 2 },
+            { options: ["A. around", "B. weather", "C. rainy", "D. cloudy"], answer: 0 },
+            { options: ["A. early", "B. lately", "C. delay", "D. daily"], answer: 2 },
+            { options: ["A. message", "B. massage", "C. passage", "D. luggage"], answer: 1 },
+            { options: ["A. lucky", "B. happy", "C. sorry", "D. agree"], answer: 3 },
+            { options: ["A. percent", "B. thousand", "C. hundred", "D. million"], answer: 0 },
+            { options: ["A. dinner", "B. supper", "C. dessert", "D. breakfast"], answer: 2 },
+            { options: ["A. reward", "B. order", "C. border", "D. corner"], answer: 0 },
+            { options: ["A. forest", "B. canal", "C. island", "D. river"], answer: 1 },
+            { options: ["A. money", "B. honey", "C. alive", "D. penny"], answer: 2 },
+            { options: ["A. until", "B. bottle", "C. little", "D. middle"], answer: 0 },
+            { options: ["A. attract", "B. center", "C. letter", "D. better"], answer: 0 },
+            { options: ["A. Japan", "B. circle", "C. purple", "D. turtle"], answer: 0 },
+            { options: ["A. finish", "B. open", "C. prefer", "D. listen"], answer: 2 },
+            { options: ["A. careful", "B. forget", "C. cheerful", "D. useful"], answer: 1 },
+            { options: ["A. connect", "B. action", "C. fiction", "D. section"], answer: 0 },
+            { options: ["A. uncle", "B. auntie", "C. deny", "D. cousin"], answer: 2 },
+            { options: ["A. relax", "B. danger", "C. anger", "D. stranger"], answer: 0 },
+            { options: ["A. nature", "B. future", "C. mature", "D. picture"], answer: 2 },
+            { options: ["A. reply", "B. carry", "C. marry", "D. hurry"], answer: 0 },
+            { options: ["A. easy", "B. exact", "C. lazy", "D. busy"], answer: 1 },
+            { options: ["A. hotel", "B. cancel", "C. travel", "D. model"], answer: 0 },
+            { options: ["A. normal", "B. formal", "C. remote", "D. local"], answer: 2 }
+        ];
+
+        // --- Game State ---
+        let currentQuestions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let timeLeft = 0;
+        let timerInterval = null;
+        let isAnswering = false;
+
+        // --- DOM Elements ---
+        const menuScreen = document.getElementById('menu-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const optionsContainer = document.getElementById('options-container');
+        const questionProgress = document.getElementById('question-progress');
+        const timeDisplay = document.getElementById('time-left');
+        const finalScore = document.getElementById('final-score');
+        const resultTitle = document.getElementById('result-title');
+        const timerIcon = timeDisplay.parentElement;
+
+        // --- Utility Functions ---
+        function shuffleArray(array) {
+            let shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        // --- Game Logic ---
+        function showMenu() {
+            menuScreen.classList.remove('hidden');
+            gameScreen.classList.add('hidden');
+            resultScreen.classList.add('hidden');
+            clearInterval(timerInterval);
+        }
+
+        function startGame(questionCount, minutes) {
+            initAudio(); // Initialize audio on user interaction
+            
+            // Setup state
+            const shuffledBank = shuffleArray(questionBank);
+            currentQuestions = shuffledBank.slice(0, questionCount);
+            currentQuestionIndex = 0;
+            score = 0;
+            timeLeft = minutes * 60;
+            isAnswering = false;
+            
+            // UI transitions
+            menuScreen.classList.add('hidden');
+            resultScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            timerIcon.classList.remove('text-red-600', 'animate-pulse');
+            
+            // Start components
+            loadQuestion();
+            updateTimerDisplay();
+            
+            clearInterval(timerInterval);
+            timerInterval = setInterval(handleTimer, 1000);
+        }
+
+        function handleTimer() {
+            timeLeft--;
+            updateTimerDisplay();
+            
+            if (timeLeft <= 10) {
+                timerIcon.classList.add('text-red-600', 'animate-pulse');
+            }
+
+            if (timeLeft <= 0) {
+                endGame(false);
+            }
+        }
+
+        function updateTimerDisplay() {
+            timeDisplay.innerText = formatTime(timeLeft);
+        }
+
+        function loadQuestion() {
+            isAnswering = false;
+            const currentQ = currentQuestions[currentQuestionIndex];
+            questionProgress.innerText = `${currentQuestionIndex + 1}/${currentQuestions.length}`;
+            
+            // Clear previous options
+            optionsContainer.innerHTML = '';
+            
+            // Render options
+            currentQ.options.forEach((optText, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn w-full p-4 border-2 border-gray-200 rounded-xl text-left font-medium text-gray-700 bg-white hover:bg-indigo-50 hover:border-indigo-300 focus:outline-none';
+                btn.innerText = optText;
+                btn.onclick = () => selectAnswer(index, btn);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function selectAnswer(selectedIndex, btnElement) {
+            if (isAnswering) return;
+            isAnswering = true;
+
+            const currentQ = currentQuestions[currentQuestionIndex];
+            const isCorrect = selectedIndex === currentQ.answer;
+            const allButtons = optionsContainer.querySelectorAll('button');
+
+            // Disable all buttons
+            allButtons.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.remove('hover:bg-indigo-50', 'hover:border-indigo-300');
+            });
+
+            // Highlight chosen and correct answers
+            if (isCorrect) {
+                score++;
+                playSound('correct');
+                btnElement.classList.add('pop');
+                btnElement.classList.remove('border-gray-200', 'bg-white');
+                btnElement.classList.add('border-green-500', 'bg-green-100', 'text-green-800');
+            } else {
+                playSound('wrong');
+                btnElement.classList.add('shake');
+                btnElement.classList.remove('border-gray-200', 'bg-white');
+                btnElement.classList.add('border-red-500', 'bg-red-100', 'text-red-800');
+                
+                // Show correct one
+                const correctBtn = allButtons[currentQ.answer];
+                correctBtn.classList.remove('border-gray-200', 'bg-white');
+                correctBtn.classList.add('border-green-500', 'bg-green-100', 'text-green-800');
+            }
+
+            // Move to next question after delay
+            setTimeout(() => {
+                currentQuestionIndex++;
+                if (currentQuestionIndex < currentQuestions.length) {
+                    loadQuestion();
+                } else {
+                    endGame(true);
+                }
+            }, 1200);
+        }
+
+        function endGame(completed) {
+            clearInterval(timerInterval);
+            gameScreen.classList.add('hidden');
+            resultScreen.classList.remove('hidden');
+
+            resultTitle.innerText = completed ? "Completed!" : "Time's Up!";
+            finalScore.innerText = `${score}/${currentQuestions.length}`;
+            
+            // Winning effects
+            if (score > 0) {
+                playSound('win');
+                confetti({
+                    particleCount: 150,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    colors: ['#4f46e5', '#10b981', '#fbbf24', '#f43f5e']
+                });
+            }
+        }
+    </script>
+</body>
+</html>
