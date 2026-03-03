@@ -38,11 +38,27 @@
             100% { transform: scale(1); }
         }
         .pop { animation: pop 0.3s ease-in-out; }
+
+        /* Tùy chỉnh thanh cuộn cho lịch sử */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
 
-    <div id="app" class="w-full max-w-2xl bg-white rounded-2xl shadow-xl overflow-hidden relative">
+    <div id="app" class="w-full max-w-2xl bg-white rounded-2xl shadow-xl overflow-hidden relative my-4">
         
         <!-- Header -->
         <div class="bg-indigo-600 text-white p-6 text-center">
@@ -101,15 +117,23 @@
         </div>
 
         <!-- Result Screen -->
-        <div id="result-screen" class="p-8 text-center hidden">
+        <div id="result-screen" class="p-6 md:p-8 text-center hidden flex flex-col items-center">
             <h2 id="result-title" class="text-3xl font-bold text-gray-800 mb-2">Time's Up!</h2>
-            <p class="text-gray-600 mb-6">Here is your final score</p>
+            <p class="text-gray-600 mb-4">Here is your final score</p>
             
-            <div class="inline-block bg-indigo-50 border border-indigo-100 rounded-full w-32 h-32 flex items-center justify-center mb-8 mx-auto shadow-inner">
-                <span id="final-score" class="text-4xl font-bold text-indigo-600">0/10</span>
+            <div class="inline-flex bg-indigo-50 border border-indigo-100 rounded-full w-24 h-24 items-center justify-center mb-6 shadow-inner">
+                <span id="final-score" class="text-3xl font-bold text-indigo-600">0/10</span>
             </div>
 
-            <button onclick="showMenu()" class="w-full md:w-1/2 mx-auto block py-3 px-6 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition shadow-md">
+            <!-- Lịch sử làm bài -->
+            <div id="answer-history-container" class="w-full text-left bg-gray-50 border border-gray-200 rounded-xl p-4 mb-6 shadow-inner relative hidden">
+                <h3 class="font-semibold text-gray-800 mb-3 pb-2 border-b border-gray-200">Answer History</h3>
+                <div id="answer-history" class="max-h-60 overflow-y-auto custom-scrollbar space-y-3 pr-2">
+                    <!-- JS sẽ tiêm các câu hỏi vào đây -->
+                </div>
+            </div>
+
+            <button onclick="showMenu()" class="w-full md:w-1/2 mx-auto py-3 px-6 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition shadow-md">
                 Play Again
             </button>
         </div>
@@ -161,7 +185,7 @@
             }
         }
 
-        // --- 60 Question Bank (Easier Grade 5 Level) ---
+        // --- Question Bank (Easier Grade 5 Level) ---
         const questionBank = [
             { options: ["A. water", "B. doctor", "C. enjoy", "D. teacher"], answer: 2 },
             { options: ["A. begin", "B. student", "C. return", "D. invite"], answer: 1 },
@@ -198,34 +222,35 @@
             { options: ["A. body", "B. moustache", "C. finger", "D. shoulder"], answer: 1 },
             { options: ["A. clever", "B. stupid", "C. polite", "D. careful"], answer: 2 },
             { options: ["A. alone", "B. quiet", "C. noisy", "D. funny"], answer: 0 },
-            { options: ["A. allow", "B. borrow", "C. swallow", "D. follow"], answer: 0 },
+            { options: ["A. apple", "B. orange", "C. lemon", "D. July"], answer: 3 },
             { options: ["A. pocket", "B. jacket", "C. balloon", "D. trousers"], answer: 2 },
             { options: ["A. around", "B. weather", "C. rainy", "D. cloudy"], answer: 0 },
-            { options: ["A. early", "B. lately", "C. delay", "D. daily"], answer: 2 },
-            { options: ["A. message", "B. massage", "C. passage", "D. luggage"], answer: 1 },
+            { options: ["A. brother", "B. sister", "C. hello", "D. uncle"], answer: 2 },
+            { options: ["A. happy", "B. friendly", "C. lovely", "D. today"], answer: 3 },
             { options: ["A. lucky", "B. happy", "C. sorry", "D. agree"], answer: 3 },
-            { options: ["A. percent", "B. thousand", "C. hundred", "D. million"], answer: 0 },
-            { options: ["A. dinner", "B. supper", "C. dessert", "D. breakfast"], answer: 2 },
-            { options: ["A. reward", "B. order", "C. border", "D. corner"], answer: 0 },
-            { options: ["A. forest", "B. canal", "C. island", "D. river"], answer: 1 },
-            { options: ["A. money", "B. honey", "C. alive", "D. penny"], answer: 2 },
-            { options: ["A. until", "B. bottle", "C. little", "D. middle"], answer: 0 },
-            { options: ["A. attract", "B. center", "C. letter", "D. better"], answer: 0 },
+            { options: ["A. table", "B. sofa", "C. ruler", "D. behind"], answer: 3 },
+            { options: ["A. soccer", "B. tennis", "C. running", "D. thirteen"], answer: 3 },
+            { options: ["A. subject", "B. English", "C. science", "D. review"], answer: 3 },
+            { options: ["A. pencil", "B. rubber", "C. notebook", "D. correct"], answer: 3 },
+            { options: ["A. sunny", "B. windy", "C. snowy", "D. balloon"], answer: 3 },
+            { options: ["A. reading", "B. drawing", "C. singing", "D. invite"], answer: 3 },
+            { options: ["A. pizza", "B. burger", "C. chicken", "D. return"], answer: 3 },
             { options: ["A. Japan", "B. circle", "C. purple", "D. turtle"], answer: 0 },
             { options: ["A. finish", "B. open", "C. prefer", "D. listen"], answer: 2 },
             { options: ["A. careful", "B. forget", "C. cheerful", "D. useful"], answer: 1 },
-            { options: ["A. connect", "B. action", "C. fiction", "D. section"], answer: 0 },
-            { options: ["A. uncle", "B. auntie", "C. deny", "D. cousin"], answer: 2 },
-            { options: ["A. relax", "B. danger", "C. anger", "D. stranger"], answer: 0 },
-            { options: ["A. nature", "B. future", "C. mature", "D. picture"], answer: 2 },
+            { options: ["A. winter", "B. summer", "C. autumn", "D. goodbye"], answer: 3 },
+            { options: ["A. candy", "B. robot", "C. machine", "D. rabbit"], answer: 2 },
+            { options: ["A. enjoy", "B. mother", "C. father", "D. brother"], answer: 0 },
+            { options: ["A. monkey", "B. zebra", "C. today", "D. tiger"], answer: 2 },
             { options: ["A. reply", "B. carry", "C. marry", "D. hurry"], answer: 0 },
-            { options: ["A. easy", "B. exact", "C. lazy", "D. busy"], answer: 1 },
-            { options: ["A. hotel", "B. cancel", "C. travel", "D. model"], answer: 0 },
-            { options: ["A. normal", "B. formal", "C. remote", "D. local"], answer: 2 }
+            { options: ["A. story", "B. comic", "C. fairy", "D. again"], answer: 3 },
+            { options: ["A. robot", "B. teddy", "C. puzzle", "D. collect"], answer: 3 },
+            { options: ["A. Friday", "B. Tuesday", "C. Sunday", "D. fourteen"], answer: 3 }
         ];
 
         // --- Game State ---
         let currentQuestions = [];
+        let userAnswers = []; // Mảng lưu trữ lịch sử trả lời
         let currentQuestionIndex = 0;
         let score = 0;
         let timeLeft = 0;
@@ -241,6 +266,8 @@
         const timeDisplay = document.getElementById('time-left');
         const finalScore = document.getElementById('final-score');
         const resultTitle = document.getElementById('result-title');
+        const answerHistoryContainer = document.getElementById('answer-history-container');
+        const answerHistoryList = document.getElementById('answer-history');
         const timerIcon = timeDisplay.parentElement;
 
         // --- Utility Functions ---
@@ -273,6 +300,7 @@
             // Setup state
             const shuffledBank = shuffleArray(questionBank);
             currentQuestions = shuffledBank.slice(0, questionCount);
+            userAnswers = []; // Reset lịch sử
             currentQuestionIndex = 0;
             score = 0;
             timeLeft = minutes * 60;
@@ -283,6 +311,7 @@
             resultScreen.classList.add('hidden');
             gameScreen.classList.remove('hidden');
             timerIcon.classList.remove('text-red-600', 'animate-pulse');
+            answerHistoryContainer.classList.add('hidden');
             
             // Start components
             loadQuestion();
@@ -335,6 +364,13 @@
             const isCorrect = selectedIndex === currentQ.answer;
             const allButtons = optionsContainer.querySelectorAll('button');
 
+            // Lưu lịch sử
+            userAnswers.push({
+                question: currentQ,
+                selected: selectedIndex,
+                isCorrect: isCorrect
+            });
+
             // Disable all buttons
             allButtons.forEach(btn => {
                 btn.disabled = true;
@@ -371,6 +407,47 @@
             }, 1200);
         }
 
+        function generateAnswerHistory() {
+            answerHistoryList.innerHTML = '';
+            
+            userAnswers.forEach((ans, index) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'p-3 rounded-lg border text-sm ' + (ans.isCorrect ? 'bg-green-50/50 border-green-200' : 'bg-red-50/50 border-red-200');
+                
+                let optionsHTML = '<div class="grid grid-cols-2 gap-1.5 mt-2">';
+                ans.question.options.forEach((opt, optIndex) => {
+                    let optClass = 'px-2 py-1.5 rounded ';
+                    if (optIndex === ans.question.answer) {
+                        optClass += 'bg-green-200 text-green-800 font-semibold'; // Đúng
+                    } else if (optIndex === ans.selected) {
+                        optClass += 'bg-red-200 text-red-800 line-through'; // Chọn sai
+                    } else {
+                        optClass += 'text-gray-500'; 
+                    }
+                    optionsHTML += `<div class="${optClass}">${opt}</div>`;
+                });
+                optionsHTML += '</div>';
+
+                itemDiv.innerHTML = `
+                    <div class="font-medium text-gray-800 flex justify-between items-center">
+                        <span>Question ${index + 1}</span>
+                        <span class="text-lg">${ans.isCorrect ? '✅' : '❌'}</span>
+                    </div>
+                    ${optionsHTML}
+                `;
+                answerHistoryList.appendChild(itemDiv);
+            });
+
+            // Hiển thị các câu bị bỏ lỡ nếu hết giờ
+            if (userAnswers.length < currentQuestions.length) {
+                const missedCount = currentQuestions.length - userAnswers.length;
+                const missedDiv = document.createElement('div');
+                missedDiv.className = 'p-3 rounded-lg border bg-gray-100 border-gray-300 text-center text-sm text-gray-500 italic mt-2';
+                missedDiv.innerText = `... and ${missedCount} unanswered question(s).`;
+                answerHistoryList.appendChild(missedDiv);
+            }
+        }
+
         function endGame(completed) {
             clearInterval(timerInterval);
             gameScreen.classList.add('hidden');
@@ -378,6 +455,12 @@
 
             resultTitle.innerText = completed ? "Completed!" : "Time's Up!";
             finalScore.innerText = `${score}/${currentQuestions.length}`;
+            
+            // Khởi tạo và hiển thị lịch sử
+            if (userAnswers.length > 0 || currentQuestions.length > 0) {
+                answerHistoryContainer.classList.remove('hidden');
+                generateAnswerHistory();
+            }
             
             // Winning effects
             if (score > 0) {
