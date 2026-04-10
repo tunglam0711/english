@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensory Feud Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: radial-gradient(circle at center, #1e3a8a 0%, #0f172a 100%);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        .flip-card {
+            perspective: 1000px;
+        }
+
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .flip-card-inner.revealed {
+            transform: rotateX(180deg);
+        }
+
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+        }
+
+        .flip-card-back {
+            transform: rotateX(180deg);
+        }
+
+        @keyframes pulse-strike {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 0; }
+        }
+
+        .strike-anim {
+            animation: pulse-strike 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .neon-text {
+            text-shadow: 0 0 10px rgba(250, 204, 21, 0.8), 0 0 20px rgba(250, 204, 21, 0.5);
+        }
+    </style>
+</head>
+<body class="text-white selection:bg-yellow-400 selection:text-black">
+
+    <div id="app" class="w-full h-full min-h-screen flex flex-col"></div>
+
+    <script>
+        // --- GAME DATA ---
+        const gameData = [
+            {
+                question: "Name words or phrases to describe how things SMELL",
+                answers: [
+                    { text: "delicious", points: 35 }, { text: "like oranges", points: 20 },
+                    { text: "bad / horrible", points: 15 }, { text: "sweet", points: 10 },
+                    { text: "stinky", points: 8 }, { text: "good", points: 5 },
+                    { text: "like flowers", points: 3 }, { text: "terrible", points: 2 },
+                    { text: "like smoke", points: 1 }, { text: "sour", points: 1 }
+                ]
+            },
+            {
+                question: "Name words or phrases to describe how things TASTE",
+                answers: [
+                    { text: "delicious", points: 30 }, { text: "sweet", points: 22 },
+                    { text: "horrible / bad", points: 18 }, { text: "sour", points: 12 },
+                    { text: "spicy / hot", points: 8 }, { text: "salty", points: 4 },
+                    { text: "like oranges", points: 3 }, { text: "good", points: 1 },
+                    { text: "bitter", points: 1 }, { text: "like chicken", points: 1 }
+                ]
+            },
+            {
+                question: "Name words or phrases to describe how things FEEL",
+                answers: [
+                    { text: "soft", points: 32 }, { text: "hard", points: 24 },
+                    { text: "smooth", points: 15 }, { text: "rough", points: 10 },
+                    { text: "cold", points: 7 }, { text: "hot / warm", points: 5 },
+                    { text: "like cloth", points: 4 }, { text: "wet", points: 1 },
+                    { text: "sticky", points: 1 }, { text: "dry", points: 1 }
+                ]
+            }
+        ];
+
+        // --- GAME STATE ---
+        let state = {
+            screen: 'start', // 'start', 'play', 'end'
+            currentRound: 0,
+            team1Score: 0,
+            team2Score: 0,
+            activeTeam: 1,
+            team1Strikes: 0,
+            team2Strikes: 0,
+            revealed: gameData.map(q => new Array(q.answers.length).fill(false))
+        };
+
+        // --- STATE MUTATIONS ---
+        const startGame = () => { state.screen = 'play'; render(); };
+        const setTeam = (team) => { state.activeTeam = team; render(); };
+        
+        const triggerStrike = (team) => {
+            if (team === 1) state.team1Strikes = Math.min(state.team1Strikes + 1, 3);
+            if (team === 2) state.team2Strikes = Math.min(state.team2Strikes + 1, 3);
+            
+            // Update strike icons in the DOM directly to avoid losing input focus
+            const t1Container = document.getElementById('team1StrikesContainer');
+            if (t1Container) t1Container.innerHTML = renderTeamStrikes(state.team1Strikes);
+            
+            const t2Container = document.getElementById('team2StrikesContainer');
+            if (t2Container) t2Container.innerHTML = renderTeamStrikes(state.team2Strikes);
+
+            // Show giant strike overlay temporarily
+            const gameArea = document.getElementById('gameContentArea');
+            if (gameArea) {
+                const overlay = document.createElement('div');
+                overlay.className = 'absolute inset-0 z-50 flex items-center justify-center pointer-events-none';
+                overlay.innerHTML = `<i class="fas fa-times text-red-600 text-[300px] strike-anim filter drop-shadow-[0_0_30px_rgba(220,38,38,1)]"></i>`;
+                gameArea.appendChild(overlay);
+                
+                setTimeout(() => {
+                    if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+                }, 1200);
+            }
+        };
+
+        const revealAnswer = (index, awardPoints = false) => {
+            if (!state.revealed[state.currentRound][index]) {
+                state.revealed[state.currentRound][index] = true;
+                
+                if (awardPoints) {
+                    const pointsEarned = gameData[state.currentRound].answers[index].points;
+                    
+                    // Add points directly to the active team
+                    if (state.activeTeam === 1) {
+                        state.team1Score += pointsEarned;
+                        const t1ScoreDisplay = document.getElementById('team1ScoreDisplay');
+                        if (t1ScoreDisplay) t1ScoreDisplay.innerText = state.team1Score;
+                    } else {
+                        state.team2Score += pointsEarned;
+                        const t2ScoreDisplay = document.getElementById('team2ScoreDisplay');
+                        if (t2ScoreDisplay) t2ScoreDisplay.innerText = state.team2Score;
+                    }
+                }
+                
+                // Targeted DOM updates allow the CSS flip animation to play smoothly
+                const cardInner = document.getElementById(`card-inner-${index}`);
+                if (cardInner) {
+                    cardInner.classList.add('revealed');
+                }
+            }
+        };
+
+        const handleGuess = (e) => {
+            e.preventDefault();
+            const inputEl = document.getElementById('guessInput');
+            const guess = inputEl.value.trim().toLowerCase();
+            if (!guess) return;
+
+            let foundIndex = -1;
+            const answers = gameData[state.currentRound].answers;
+
+            answers.forEach((ans, idx) => {
+                if (!state.revealed[state.currentRound][idx]) {
+                    const parts = ans.text.toLowerCase().split('/').map(p => p.trim());
+                    if (parts.includes(guess) || guess === ans.text.toLowerCase()) {
+                        foundIndex = idx;
+                    }
+                }
+            });
+
+            if (foundIndex !== -1) {
+                revealAnswer(foundIndex, true);
+            } else {
+                triggerStrike(state.activeTeam);
+            }
+            
+            inputEl.value = ''; // Clear input for the next guess
+            inputEl.focus(); // Maintain focus
+        };
+
+        const nextRound = () => {
+            if (state.currentRound < gameData.length - 1) {
+                state.currentRound++;
+                state.team1Strikes = 0;
+                state.team2Strikes = 0;
+                render();
+            } else {
+                state.screen = 'end';
+                render();
+            }
+        };
+
+        const resetGame = () => {
+            state = {
+                screen: 'start',
+                currentRound: 0,
+                team1Score: 0,
+                team2Score: 0,
+                activeTeam: 1,
+                team1Strikes: 0,
+                team2Strikes: 0,
+                revealed: gameData.map(q => new Array(q.answers.length).fill(false))
+            };
+            render();
+        };
+
+        // Render Strikes Helper
+        const renderTeamStrikes = (strikes) => {
+            let html = '<div class="flex justify-center gap-1 mt-2">';
+            for(let i=0; i<3; i++) {
+                if(i < strikes) {
+                    html += `<i class="fas fa-times text-red-500 text-xl filter drop-shadow-[0_0_5px_rgba(239,68,68,0.8)]"></i>`;
+                } else {
+                    html += `<i class="fas fa-times text-red-900/30 text-xl border border-dashed border-red-900/20 rounded"></i>`;
+                }
+            }
+            html += '</div>';
+            return html;
+        };
+
+        // Make functions globally available for inline handlers
+        window.startGame = startGame;
+        window.setTeam = setTeam;
+        window.handleGuess = handleGuess;
+        window.revealAnswer = revealAnswer;
+        window.triggerStrike = triggerStrike;
+        window.nextRound = nextRound;
+        window.resetGame = resetGame;
+
+        // --- RENDERERS ---
+        const renderStartScreen = () => `
+            <div class="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                <div class="animate-bounce mb-8">
+                    <i class="fas fa-star text-yellow-400 text-6xl drop-shadow-[0_0_15px_rgba(250,204,21,0.8)]"></i>
+                </div>
+                <h1 class="text-6xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-200 to-yellow-600 uppercase tracking-tighter mb-4 filter drop-shadow-lg neon-text">
+                    Sensory Feud
+                </h1>
+                <p class="text-2xl text-blue-300 font-bold mb-12 tracking-widest uppercase">Grammar Practice Edition</p>
+                
+                <div class="flex gap-8 mb-12">
+                    <div class="bg-blue-900/50 p-6 rounded-2xl border-2 border-blue-500 w-64">
+                        <h3 class="text-xl font-bold text-blue-300 mb-2">Team 1</h3>
+                        <p class="text-sm text-gray-400">Ready to play!</p>
+                    </div>
+                    <div class="text-yellow-400 font-black text-4xl self-center">VS</div>
+                    <div class="bg-red-900/50 p-6 rounded-2xl border-2 border-red-500 w-64">
+                        <h3 class="text-xl font-bold text-red-300 mb-2">Team 2</h3>
+                        <p class="text-sm text-gray-400">Ready to play!</p>
+                    </div>
+                </div>
+
+                <button onclick="startGame()" class="group relative px-12 py-5 bg-gradient-to-b from-yellow-400 to-yellow-600 text-black text-3xl font-black rounded-full overflow-hidden shadow-[0_0_40px_rgba(250,204,21,0.4)] transition hover:scale-105 active:scale-95">
+                    <span class="relative z-10 uppercase tracking-wider">Start Game</span>
+                    <div class="absolute inset-0 h-full w-full bg-white opacity-0 group-hover:opacity-20 transition"></div>
+                </button>
+            </div>
+        `;
+
+        const renderEndScreen = () => {
+            const winner = state.team1Score > state.team2Score ? "TEAM 1 WINS!" : 
+                           state.team2Score > state.team1Score ? "TEAM 2 WINS!" : "IT'S A TIE!";
+            return `
+            <div class="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                <h1 class="text-6xl md:text-8xl font-black text-yellow-400 uppercase tracking-tighter mb-8 neon-text">
+                    ${winner}
+                </h1>
+                <div class="flex gap-12 text-4xl font-bold mb-12">
+                    <div class="text-blue-400">Team 1: <span class="text-white">${state.team1Score}</span></div>
+                    <div class="text-red-400">Team 2: <span class="text-white">${state.team2Score}</span></div>
+                </div>
+                <button onclick="resetGame()" class="px-8 py-4 bg-blue-600 text-white text-xl font-bold rounded-full hover:bg-blue-500 transition shadow-lg">
+                    Play Again <i class="fas fa-redo ml-2"></i>
+                </button>
+            </div>
+        `};
+
+        const renderGameScreen = () => {
+            const q = gameData[state.currentRound];
+            
+            // Generate board HTML
+            const boardHTML = q.answers.map((ans, idx) => {
+                const isRevealed = state.revealed[state.currentRound][idx];
+                return `
+                    <div class="flip-card h-16 md:h-20 w-full cursor-pointer" onclick="revealAnswer(${idx})">
+                        <div id="card-inner-${idx}" class="flip-card-inner ${isRevealed ? 'revealed' : ''}">
+                            <!-- FRONT (Hidden) -->
+                            <div class="flip-card-front bg-gradient-to-b from-blue-600 to-blue-800 border-2 border-blue-400 rounded-lg shadow-inner justify-center items-center">
+                                <div class="w-12 h-10 bg-gradient-to-b from-blue-400 to-blue-600 rounded-[50%] border-2 border-blue-300 flex items-center justify-center shadow-md">
+                                    <span class="text-white text-xl font-bold">${idx + 1}</span>
+                                </div>
+                            </div>
+                            <!-- BACK (Revealed) -->
+                            <div class="flip-card-back bg-gradient-to-b from-blue-100 to-white border-2 border-yellow-400 rounded-lg shadow-lg overflow-hidden flex justify-between">
+                                <span class="text-blue-900 text-xl md:text-2xl font-black uppercase pl-6 py-2 truncate">${ans.text}</span>
+                                <div class="bg-gradient-to-b from-blue-800 to-blue-950 h-full w-20 flex items-center justify-center border-l-2 border-blue-400 shadow-inner">
+                                    <span class="text-yellow-400 text-2xl font-extrabold neon-text">${ans.points}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <!-- Main Header / Scoreboard -->
+                <div class="w-full bg-slate-900 border-b-4 border-blue-800 shadow-lg p-4 flex justify-between items-center z-10 sticky top-0">
+                    
+                    <!-- Team 1 -->
+                    <div class="flex items-center gap-4 bg-blue-950/80 p-3 rounded-xl border-2 transition-all duration-300 ${state.activeTeam === 1 ? 'border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.5)] scale-105' : 'border-blue-800 cursor-pointer hover:border-blue-600'}" onclick="setTeam(1)">
+                        <div class="text-center">
+                            <div class="font-black tracking-widest uppercase text-sm ${state.activeTeam === 1 ? 'text-yellow-400' : 'text-blue-300'}">Team 1 ${state.activeTeam === 1 ? '<span class="ml-1 text-[10px] px-2 py-0.5 bg-yellow-400 text-black rounded font-black align-middle">TURN</span>' : ''}</div>
+                            <div id="team1ScoreDisplay" class="text-4xl font-black text-white">${state.team1Score}</div>
+                            <div id="team1StrikesContainer">${renderTeamStrikes(state.team1Strikes)}</div>
+                        </div>
+                        ${state.activeTeam === 1 ? '<i class="fas fa-microphone text-yellow-400 text-3xl animate-pulse"></i>' : ''}
+                    </div>
+
+                    <!-- Round Display -->
+                    <div class="text-center bg-black border-2 border-yellow-500 px-12 py-4 rounded-2xl shadow-[0_0_20px_rgba(250,204,21,0.3)]">
+                        <div class="text-yellow-500 font-black uppercase text-2xl tracking-widest">Round ${state.currentRound + 1}</div>
+                    </div>
+
+                    <!-- Team 2 -->
+                    <div class="flex items-center gap-4 bg-red-950/80 p-3 rounded-xl border-2 transition-all duration-300 ${state.activeTeam === 2 ? 'border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.5)] scale-105' : 'border-red-800 cursor-pointer hover:border-red-600'}" onclick="setTeam(2)">
+                        ${state.activeTeam === 2 ? '<i class="fas fa-microphone text-yellow-400 text-3xl animate-pulse"></i>' : ''}
+                        <div class="text-center">
+                            <div class="font-black tracking-widest uppercase text-sm ${state.activeTeam === 2 ? 'text-yellow-400' : 'text-red-300'}">${state.activeTeam === 2 ? '<span class="mr-1 text-[10px] px-2 py-0.5 bg-yellow-400 text-black rounded font-black align-middle">TURN</span>' : ''} Team 2</div>
+                            <div id="team2ScoreDisplay" class="text-4xl font-black text-white">${state.team2Score}</div>
+                            <div id="team2StrikesContainer">${renderTeamStrikes(state.team2Strikes)}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Game Content Area -->
+                <div id="gameContentArea" class="flex-1 w-full max-w-6xl mx-auto p-4 md:p-8 flex flex-col relative">
+
+                    <!-- Question Box -->
+                    <div class="bg-gradient-to-r from-blue-900 to-blue-800 border-2 border-blue-400 rounded-2xl p-6 mb-8 text-center shadow-xl">
+                        <h2 class="text-2xl md:text-3xl font-black text-white uppercase tracking-wider neon-text">
+                            ${q.question}
+                        </h2>
+                    </div>
+
+                    <!-- Board Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mb-12 flex-1 content-start">
+                        ${boardHTML}
+                    </div>
+
+                    <!-- Host Controls Panel -->
+                    <div class="bg-slate-800 border-2 border-slate-700 rounded-2xl p-4 shadow-2xl mt-auto">
+                        <div class="flex justify-between items-center mb-3 border-b border-slate-700 pb-2">
+                            <p class="text-gray-400 text-xs font-bold uppercase tracking-widest">Host Controls</p>
+                            
+                            <!-- EXPLICIT TEAM TOGGLE -->
+                            <div class="flex items-center gap-2 bg-slate-900 p-1 rounded-lg border border-slate-600">
+                                <span class="text-[10px] font-bold text-gray-400 uppercase ml-2">Set Answering Team:</span>
+                                <button onclick="setTeam(1)" class="px-4 py-1 rounded text-xs font-bold transition-all ${state.activeTeam === 1 ? 'bg-blue-600 text-white shadow-[0_0_10px_rgba(37,99,235,0.5)]' : 'text-gray-400 hover:bg-slate-700'}">Team 1</button>
+                                <button onclick="setTeam(2)" class="px-4 py-1 rounded text-xs font-bold transition-all ${state.activeTeam === 2 ? 'bg-red-600 text-white shadow-[0_0_10px_rgba(220,38,38,0.5)]' : 'text-gray-400 hover:bg-slate-700'}">Team 2</button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex flex-col md:flex-row gap-6 items-center">
+                            
+                            <!-- Guess Input -->
+                            <form onsubmit="handleGuess(event)" class="flex-1 flex w-full">
+                                <input id="guessInput" type="text" placeholder="Type student's guess..." class="flex-1 p-4 rounded-l-lg text-lg font-bold text-gray-800 border-2 border-r-0 border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                                <button type="submit" class="bg-green-500 hover:bg-green-400 text-white font-black px-8 rounded-r-lg border-2 border-green-600 transition text-lg shadow-lg uppercase tracking-wider">
+                                    Guess
+                                </button>
+                            </form>
+
+                            <!-- Strikes -->
+                            <div class="flex items-center gap-2 bg-black/50 p-2 rounded-xl border border-slate-700">
+                                <button onclick="triggerStrike(1)" class="bg-red-900 hover:bg-red-700 text-white font-bold py-2 px-3 text-sm rounded transition border-2 border-red-800">
+                                    <i class="fas fa-times"></i> Strike T1
+                                </button>
+                                <button onclick="triggerStrike(2)" class="bg-red-900 hover:bg-red-700 text-white font-bold py-2 px-3 text-sm rounded transition border-2 border-red-800">
+                                    <i class="fas fa-times"></i> Strike T2
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Round Management -->
+                        <div class="flex justify-end items-center mt-4 pt-4 border-t border-slate-700">
+                            <button onclick="nextRound()" class="bg-yellow-500 hover:bg-yellow-400 text-black font-black py-2 px-8 rounded transition shadow-lg uppercase tracking-wider">
+                                ${state.currentRound < gameData.length - 1 ? 'Next Round <i class="fas fa-arrow-right ml-2"></i>' : 'Finish Game'}
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            `;
+        };
+
+        const render = () => {
+            const app = document.getElementById('app');
+            if (state.screen === 'start') app.innerHTML = renderStartScreen();
+            else if (state.screen === 'play') app.innerHTML = renderGameScreen();
+            else if (state.screen === 'end') app.innerHTML = renderEndScreen();
+        };
+
+        // Initialize game
+        render();
+
+    </script>
+</body>
+</html>
+```
