@@ -32,10 +32,8 @@
             overflow: hidden;
         }
 
-        /* Utility Classes */
         .hidden { display: none !important; }
         
-        /* Typography */
         h1.title {
             font-family: 'Luckiest Guy', cursive;
             font-size: 5rem;
@@ -58,7 +56,6 @@
             letter-spacing: 2px;
         }
 
-        /* Setup Screen */
         #setup-screen {
             background: var(--card-bg);
             padding: 40px;
@@ -72,7 +69,6 @@
             z-index: 10;
         }
 
-        /* Mode Selection Cards */
         .mode-cards {
             display: flex;
             gap: 20px;
@@ -101,28 +97,15 @@
             box-shadow: 0 15px 25px -5px rgba(59, 130, 246, 0.2);
         }
 
-        .mode-title {
-            font-size: 2rem;
-            font-weight: 900;
-            color: #0f172a;
-        }
-
-        .mode-desc {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #64748b;
-        }
-
-        .mode-icon {
-            font-size: 3rem;
-        }
+        .mode-title { font-size: 2rem; font-weight: 900; color: #0f172a; }
+        .mode-desc { font-size: 1rem; font-weight: 600; color: #64748b; }
+        .mode-icon { font-size: 3rem; }
 
         @media (max-width: 600px) {
             .mode-cards { flex-direction: column; }
             .mode-card { padding: 30px 20px; }
         }
 
-        /* Step 2 Forms */
         .input-group { margin-bottom: 25px; }
         .input-group label { display: block; font-weight: 900; margin-bottom: 10px; color: #334155; text-transform: uppercase; letter-spacing: 1px; }
         
@@ -155,9 +138,7 @@
             border: 2px solid #e2e8f0;
         }
         
-        .checkbox-group input[type="checkbox"] {
-            width: 24px; height: 24px; accent-color: var(--primary); cursor: pointer;
-        }
+        .checkbox-group input[type="checkbox"] { width: 24px; height: 24px; accent-color: var(--primary); cursor: pointer; }
 
         .setup-header {
             display: flex;
@@ -179,7 +160,6 @@
             letter-spacing: 1px;
         }
 
-        /* Buttons */
         button {
             width: 100%; padding: 18px; border: none; border-radius: 16px;
             font-family: 'Nunito', sans-serif; font-size: 1.4rem; font-weight: 900;
@@ -200,17 +180,13 @@
         .btn-next { background: var(--success); color: white; box-shadow: 0 6px 0 #047857; width: auto; padding: 15px 40px; }
         .btn-next:hover { transform: translateY(3px); box-shadow: 0 3px 0 #047857; }
 
-        /* Game Screen */
         #game-screen {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
             display: flex; flex-direction: column; z-index: 5;
         }
 
-        .hud {
-            padding: 20px 40px; display: flex; justify-content: space-between; align-items: center;
-            background: rgba(0,0,0,0.3); backdrop-filter: blur(10px); z-index: 20;
-        }
+        .hud { padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); backdrop-filter: blur(10px); z-index: 20; }
         .hud-text { font-size: 1.5rem; font-weight: 900; color: white; letter-spacing: 2px; }
 
         #bubble-container {
@@ -219,39 +195,21 @@
             background-size: 40px 40px;
         }
 
-        .controls {
-            padding: 30px; display: flex; justify-content: center; gap: 20px;
-            background: rgba(0,0,0,0.3); backdrop-filter: blur(10px); z-index: 20;
-        }
+        .controls { padding: 30px; display: flex; justify-content: center; gap: 20px; background: rgba(0,0,0,0.3); backdrop-filter: blur(10px); z-index: 20; }
 
-        /* Bubbles */
         .bubble {
-            position: absolute;
-            top: 0; left: 0;
-            display: flex; justify-content: center; align-items: center;
-            color: white; font-weight: 900;
-            border-radius: 100px;
+            position: absolute; top: 0; left: 0; display: flex; justify-content: center; align-items: center;
+            color: white; font-weight: 900; border-radius: 100px;
             box-shadow: inset -5px -5px 15px rgba(0,0,0,0.3), inset 5px 5px 15px rgba(255,255,255,0.4), 0 10px 20px rgba(0,0,0,0.5);
-            border: 2px solid rgba(255,255,255,0.2);
-            will-change: transform;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            border: 2px solid rgba(255,255,255,0.2); will-change: transform; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
             animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        .bubble.mode-words {
-            width: 80px; height: 80px; font-size: 2.5rem; text-transform: uppercase;
-        }
-        .bubble.mode-sentences {
-            padding: 15px 30px; font-size: 1.8rem; height: auto; width: auto;
-            border-radius: 50px;
-        }
+        .bubble.mode-words { width: 80px; height: 80px; font-size: 2.5rem; text-transform: uppercase; }
+        .bubble.mode-sentences { padding: 15px 30px; font-size: 1.8rem; height: auto; width: auto; border-radius: 50px; }
 
-        @keyframes popIn {
-            0% { transform: scale(0); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
+        @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 
-        /* Answer Overlay */
         #answer-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.7); backdrop-filter: blur(15px);
@@ -268,20 +226,14 @@
             box-shadow: 0 30px 60px rgba(0,0,0,0.5); border: 8px solid #cbd5e1;
         }
         #answer-overlay.visible .answer-box { transform: scale(1); }
-        
         .answer-label { color: #94a3b8; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 10px; }
         .answer-text { font-size: 4rem; font-weight: 900; color: #0f172a; margin: 0; line-height: 1.2; word-wrap: break-word; }
 
-        /* End Screen */
-        #end-screen {
-            background: var(--card-bg); padding: 50px; border-radius: 32px;
-            text-align: center; z-index: 40; box-shadow: 0 25px 50px rgba(0,0,0,0.5);
-        }
+        #end-screen { background: var(--card-bg); padding: 50px; border-radius: 32px; text-align: center; z-index: 40; box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
         .end-icon { font-size: 6rem; margin-bottom: 10px; }
 
-        /* Cloud UI Styles */
         .lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; max-height: 400px; overflow-y: auto; padding: 10px; }
-        .lib-card { background: white; border: 2px solid #dcfce7; border-radius: 20px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 700; color: var(--text-main); position: relative; min-height: 120px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .lib-card { background: white; border: 2px solid #dcfce7; border-radius: 20px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 700; color: #1e293b; position: relative; min-height: 120px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
         .lib-card:hover { transform: translateY(-5px); border-color: var(--primary); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
         .lib-card.active { background: #dcfce7; border-color: var(--primary); box-shadow: inset 0 0 0 2px var(--primary); }
         .lib-actions { position: absolute; top: 10px; right: 10px; display: flex; gap: 8px; opacity: 0; transition: opacity 0.2s; }
@@ -290,7 +242,6 @@
         .btn-edit { background: #fef3c7; color: #d97706; }
         .btn-delete { background: #fee2e2; color: #dc2626; }
         .lib-card.import-trigger { border: 2px dashed var(--primary); color: var(--primary); background: transparent; font-size: 1.2rem; }
-        .lib-card.import-trigger:hover { background: #f0fdf4; }
         
         #import-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 200; backdrop-filter: blur(4px); }
         .import-modal { background: white; width: 95%; max-width: 600px; padding: 30px; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
@@ -298,32 +249,20 @@
         #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; font-weight: 800; color: var(--primary-dark); }
         .spinner { border: 4px solid rgba(0,0,0,0.1); width: 40px; height: 40px; border-radius: 50%; border-left-color: var(--primary); animation: spin 1s linear infinite; margin-bottom: 10px; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        #current-selection-label { font-weight: 600; color: var(--primary-dark); margin-bottom: 20px; background: #dcfce7; padding: 10px 15px; border-radius: 12px; display: inline-block; transition: color 0.3s; }
-
-        @media (max-width: 768px) {
-            h1.title { font-size: 3.5rem; }
-            .bubble.mode-words { width: 60px; height: 60px; font-size: 1.8rem; }
-            .bubble.mode-sentences { padding: 10px 20px; font-size: 1.3rem; }
-            .answer-text { font-size: 2.5rem; }
-        }
+        #current-selection-label { font-weight: 600; color: var(--primary-dark); margin-bottom: 20px; background: #dcfce7; padding: 10px 15px; border-radius: 12px; display: inline-block; }
     </style>
 </head>
 <body>
 
-    <!-- LOADING OVERLAY -->
     <div id="loading-overlay">
         <div class="spinner"></div>
         <div id="loading-text">Connecting to Cloud...</div>
     </div>
 
-    <!-- SETUP SCREEN -->
     <div id="setup-screen">
-        
-        <!-- STEP 1: Select Mode -->
         <div id="setup-step-1">
             <h1 class="title">BUBBLES</h1>
             <div class="subtitle">Select your game mode</div>
-
             <div class="mode-cards">
                 <div class="mode-card" onclick="selectMode('words')">
                     <div class="mode-icon">🔤</div>
@@ -338,110 +277,88 @@
             </div>
         </div>
 
-        <!-- STEP 2: Configure List & Difficulty -->
         <div id="setup-step-2" class="hidden">
             <div class="setup-header">
                 <button class="btn-secondary" onclick="backToStep1()">← Back</button>
                 <div class="selected-mode-badge" id="mode-badge">MODE: WORDS</div>
             </div>
-
             <div class="input-group">
                 <label>Difficulty</label>
                 <select id="game-difficulty">
-                    <option value="easy">🟩 Easy (Slow, simple directions)</option>
-                    <option value="normal" selected>🟨 Normal (Medium speed)</option>
-                    <option value="hard">🟥 Hard (Fast, erratic directions)</option>
+                    <option value="easy">🟩 Easy (Slow)</option>
+                    <option value="normal" selected>🟨 Normal</option>
+                    <option value="hard">🟥 Hard (Fast)</option>
                 </select>
             </div>
-
             <div style="text-align: center; margin-bottom: 10px;">
                 <div id="current-selection-label">No list selected</div><br>
                 <button class="btn-secondary" onclick="goToLibraryStep()" style="font-size: 1rem; padding: 12px 24px; margin: 0 auto 20px auto;">Choose Question List</button>
             </div>
-
             <label class="checkbox-group">
                 <input type="checkbox" id="mix-questions" checked onclick="playClickSound()">
                 Mix the questions randomly
             </label>
-
-            <button class="btn-play" onclick="startGame()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                START GAME
-            </button>
+            <button class="btn-play" onclick="startGame()">START GAME</button>
         </div>
 
-        <!-- STEP 3: Cloud Library -->
         <div id="setup-step-3" class="hidden">
             <div class="setup-header">
                 <button class="btn-secondary" onclick="backToStep2()">← Back</button>
                 <label class="setup-label" style="margin: 0;">Cloud Library</label>
             </div>
-            
             <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center; justify-content: flex-end;">
                 <label class="setup-label" style="margin: 0; font-size: 0.75rem;">Sort By:</label>
-                <select id="lib-sort-select" class="setup-select" style="width: auto; padding: 8px; font-size: 0.75rem;" onchange="window.handleSortChange(this.value)">
+                <select id="lib-sort-select" style="width: auto; padding: 8px; font-size: 0.75rem;" onchange="window.handleSortChange(this.value)">
                     <option value="timestamp">Newest First</option>
                     <option value="name">Name (A-Z)</option>
                 </select>
             </div>
-
             <div class="lib-grid" id="lib-grid-container"></div>
         </div>
-
     </div>
 
-    <!-- Manual Import Modal -->
     <div id="import-overlay" class="hidden">
         <div class="import-modal">
             <label id="modal-title" class="setup-label">Import & Save Words/Sentences</label>
-            <textarea id="setup-import" class="setup-textarea" placeholder="Item 1&#10;Item 2&#10;Item 3"></textarea>
-            <input type="text" id="library-name" class="setup-input" placeholder="List Name (e.g. Unit 5)" style="margin-bottom: 20px;">
+            <textarea id="setup-import" placeholder="Item 1&#10;Item 2"></textarea>
+            <input type="text" id="library-name" placeholder="List Name" style="margin-bottom: 20px; width: 100%; padding: 15px; border-radius: 16px; border: 3px solid #e2e8f0;">
             <div style="display: flex; gap: 10px;">
-                <button class="btn-secondary" onclick="closeImportModal()" style="flex: 1; justify-content: center; padding: 15px;">Cancel</button>
-                <button class="btn-next" onclick="saveToLibrary()" style="flex: 1; justify-content: center; padding: 15px;">Save to Cloud</button>
+                <button class="btn-secondary" onclick="closeImportModal()" style="flex: 1;">Cancel</button>
+                <button class="btn-next" onclick="saveToLibrary()" style="flex: 1;">Save</button>
             </div>
         </div>
     </div>
 
-    <!-- GAME SCREEN -->
     <div id="game-screen" class="hidden">
         <div class="hud">
             <button class="btn-secondary" onclick="quitGame()">← Quit</button>
             <div class="hud-text" id="question-counter">Question 1 / 10</div>
         </div>
-
         <div id="bubble-container">
-            <!-- Bubbles get injected here via JS -->
-            
-            <!-- Answer Overlay -->
             <div id="answer-overlay">
                 <div class="answer-box">
                     <div class="answer-label">The Answer is</div>
-                    <h2 class="answer-text" id="answer-text-display">APPLE</h2>
+                    <h2 class="answer-text" id="answer-text-display"></h2>
                 </div>
             </div>
         </div>
-
         <div class="controls">
             <button id="btn-show-answer" class="btn-action" onclick="showAnswer()">SHOW ANSWER</button>
             <button id="btn-next-question" class="btn-next hidden" onclick="nextQuestion()">NEXT QUESTION →</button>
         </div>
     </div>
 
-    <!-- END SCREEN -->
     <div id="end-screen" class="hidden">
         <div class="end-icon">🎉</div>
-        <h1 class="title" style="font-size: 3rem; margin-bottom: 10px;">GREAT JOB!</h1>
-        <p style="font-size: 1.5rem; font-weight: 800; color: #475569; margin-bottom: 30px;">You've finished all the bubbles.</p>
+        <h1 class="title" style="font-size: 3rem;">GREAT JOB!</h1>
         <button class="btn-play" onclick="quitGame()">PLAY AGAIN</button>
     </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, collection, addDoc, onSnapshot, doc, setDoc, deleteDoc, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // --- FIREBASE CONFIG ---
     const EXTERNAL_CONFIG = {
         apiKey: "AIzaSyBsxFf5oahfu6woX4y5XlU_O56e7SMZH-4",
         authDomain: "bubbles-bd1ac.firebaseapp.com",
@@ -449,494 +366,171 @@
         storageBucket: "bubbles-bd1ac.firebasestorage.app",
         messagingSenderId: "335805617916",
         appId: "1:335805617916:web:8933c2b8f474f4ea352979",
-        measurementId: "G-QCKKMDR119"
     }; 
 
-    let user = null;
-    let savedLibraries = [];
-    let librarySortBy = 'timestamp';
-    let selectedLibId = null;
-    let editingId = null;
-    let auth, db, appId;
+    let user = null, savedLibraries = [], librarySortBy = 'timestamp', selectedLibId = null, editingId = null, auth, db, appId;
 
-    // --- GAME STATE ---
-    const gameState = {
-        mode: 'words',
-        difficulty: 'normal',
-        questions: [],
-        currentIndex: 0,
-        bubbles: [], // Physics objects
-        animationId: null,
-        containerWidth: 0,
-        containerHeight: 0
-    };
+    const gameState = { mode: 'words', difficulty: 'normal', questions: [], currentIndex: 0, bubbles: [], animationId: null, containerWidth: 0, containerHeight: 0 };
+    const bubbleGradients = ['linear-gradient(135deg, #f43f5e, #e11d48)', 'linear-gradient(135deg, #3b82f6, #2563eb)', 'linear-gradient(135deg, #10b981, #059669)', 'linear-gradient(135deg, #f59e0b, #d97706)', 'linear-gradient(135deg, #8b5cf6, #6d28d9)', 'linear-gradient(135deg, #06b6d4, #0284c7)'];
 
-    // --- COLORS FOR BUBBLES ---
-    const bubbleGradients = [
-        'linear-gradient(135deg, #f43f5e, #e11d48)', // Rose
-        'linear-gradient(135deg, #3b82f6, #2563eb)', // Blue
-        'linear-gradient(135deg, #10b981, #059669)', // Emerald
-        'linear-gradient(135deg, #f59e0b, #d97706)', // Amber
-        'linear-gradient(135deg, #8b5cf6, #6d28d9)', // Violet
-        'linear-gradient(135deg, #06b6d4, #0284c7)'  // Cyan
-    ];
-
-    // --- SOUND ENGINE ---
     let audioCtx = null;
-    function initAudio() {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-    }
-
-    function playTone(freq, type, duration, vol=0.1) {
-        if (!audioCtx) return;
-        try {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = type;
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + duration);
-        } catch(e) {}
-    }
+    function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
+    function playTone(freq, type, duration, vol=0.1) { if (!audioCtx) return; try { const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime); gain.gain.setValueAtTime(vol, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + duration); } catch(e) {} }
 
     window.playClickSound = function() { initAudio(); playTone(600, 'square', 0.05, 0.05); }
     window.playBounceSound = function() { playTone(300, 'triangle', 0.05, 0.03); }
     window.playPopSound = function() { playTone(800, 'sine', 0.2, 0.3); }
-    window.playVictorySound = function() {
-        initAudio();
-        playTone(523.25, 'sine', 0.2, 0.2); // C5
-        setTimeout(() => playTone(659.25, 'sine', 0.2, 0.2), 150); // E5
-        setTimeout(() => playTone(783.99, 'sine', 0.4, 0.2), 300); // G5
-    }
+    window.playVictorySound = function() { initAudio(); playTone(523.25, 'sine', 0.2, 0.2); setTimeout(() => playTone(659.25, 'sine', 0.2, 0.2), 150); setTimeout(() => playTone(783.99, 'sine', 0.4, 0.2), 300); }
 
-    // --- UTILS ---
     const getEl = id => document.getElementById(id);
     const hide = id => getEl(id).classList.add('hidden');
     const show = id => getEl(id).classList.remove('hidden');
 
-    // Export utils to window for inline onclick handlers
-    window.getEl = getEl;
-    window.hide = hide;
-    window.show = show;
+    function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array; }
 
-    function shuffleArray(array) {
-        for (let i = array.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [array[i], array[j]] = [array[j], array[i]];
-        }
-        return array;
-    }
+    window.selectMode = function(mode) { initAudio(); window.playClickSound(); gameState.mode = mode; getEl('mode-badge').innerText = `MODE: ${mode.toUpperCase()}`; hide('setup-step-1'); show('setup-step-2'); };
+    window.backToStep1 = function() { window.playClickSound(); hide('setup-step-2'); show('setup-step-1'); };
+    window.goToLibraryStep = function() { window.playClickSound(); hide('setup-step-2'); show('setup-step-3'); };
+    window.backToStep2 = function() { window.playClickSound(); hide('setup-step-3'); show('setup-step-2'); };
+    window.openImportModal = function() { window.playClickSound(); if (!editingId) { getEl('modal-title').innerText = "Import & Save"; getEl('library-name').value = ''; getEl('setup-import').value = ''; } show('import-overlay'); };
+    window.closeImportModal = function() { window.playClickSound(); editingId = null; hide('import-overlay'); };
+    window.handleSortChange = function(val) { window.playClickSound(); librarySortBy = val; renderLibraryGrid(); };
+    window.selectLibrary = function(id) { window.playClickSound(); selectedLibId = id; const found = savedLibraries.find(l => l.id === id); getEl('current-selection-label').innerText = found ? `Selected: ${found.name}` : "No list selected"; window.backToStep2(); };
 
-    // --- CLOUD SETUP LOGIC ---
-    window.selectMode = function(mode) {
-        initAudio();
-        window.playClickSound();
-        gameState.mode = mode;
-        getEl('mode-badge').innerText = `MODE: ${mode.toUpperCase()}`;
-        hide('setup-step-1');
-        show('setup-step-2');
-    };
-
-    window.backToStep1 = function() {
-        window.playClickSound();
-        hide('setup-step-2');
-        show('setup-step-1');
-    };
-
-    window.goToLibraryStep = function() {
-        window.playClickSound();
-        hide('setup-step-2');
-        show('setup-step-3');
-    };
-
-    window.backToStep2 = function() {
-        window.playClickSound();
-        hide('setup-step-3');
-        show('setup-step-2');
-    };
-
-    window.openImportModal = function() {
-        window.playClickSound();
-        if (!editingId) {
-            getEl('modal-title').innerText = "Import & Save Words/Sentences";
-            getEl('library-name').value = '';
-            getEl('setup-import').value = '';
-        }
-        show('import-overlay');
-    };
-
-    window.closeImportModal = function() {
-        window.playClickSound();
-        editingId = null;
-        hide('import-overlay');
-    };
-
-    window.handleSortChange = function(val) {
-        window.playClickSound();
-        librarySortBy = val;
-        renderLibraryGrid();
-    };
-
-    window.selectLibrary = function(id) {
-        window.playClickSound();
-        selectedLibId = id;
-        const found = savedLibraries.find(l => l.id === id);
-        getEl('current-selection-label').innerText = found ? `Selected: ${found.name}` : "No list selected";
-        window.backToStep2();
-    };
-
-    window.deleteLibrary = async function(id) {
-        window.playClickSound();
-        if (user && db) {
-            try {
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bubbleLibraries', id));
-                if (selectedLibId === id) {
-                    selectedLibId = null;
-                    getEl('current-selection-label').innerText = "No list selected";
-                }
-            } catch (e) { console.error("Cloud Delete failed", e); }
-        }
-    };
-
-    window.editLibrary = function(id) {
-        window.playClickSound();
-        const lib = savedLibraries.find(l => l.id === id);
-        if (!lib) return;
-        editingId = id;
-        getEl('modal-title').innerText = "Edit List";
-        getEl('library-name').value = lib.name;
-        getEl('setup-import').value = lib.items.join('\n');
-        window.openImportModal();
-    };
-
-    window.saveToLibrary = async function() {
-        window.playClickSound();
-        const name = getEl('library-name').value.trim();
-        const content = getEl('setup-import').value.trim();
-        if (!name || !content || !user) return;
-        
-        const items = content.split('\n').map(s => s.trim()).filter(s => s.length > 0);
-        if (items.length === 0) return;
-
-        const libCol = collection(db, 'artifacts', appId, 'public', 'data', 'bubbleLibraries');
-        try {
-            if (editingId) {
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bubbleLibraries', editingId), { 
-                    name, items, timestamp: Date.now(), userId: user.uid 
-                });
-                selectedLibId = editingId;
-            } else {
-                const docRef = await addDoc(libCol, { 
-                    name, items, timestamp: Date.now(), userId: user.uid 
-                });
-                selectedLibId = docRef.id;
-            }
-            getEl('current-selection-label').innerText = `Selected: ${name}`;
-            window.closeImportModal();
-            window.backToStep2();
-        } catch (e) { console.error("Cloud Save failed", e); } 
-    };
+    window.deleteLibrary = async function(id) { window.playClickSound(); if (user && db) { try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bubbleLibraries', id)); if (selectedLibId === id) { selectedLibId = null; getEl('current-selection-label').innerText = "No list selected"; } } catch (e) { console.error(e); } } };
+    window.editLibrary = function(id) { window.playClickSound(); const lib = savedLibraries.find(l => l.id === id); if (!lib) return; editingId = id; getEl('modal-title').innerText = "Edit List"; getEl('library-name').value = lib.name; getEl('setup-import').value = lib.items.join('\n'); window.openImportModal(); };
+    window.saveToLibrary = async function() { window.playClickSound(); const name = getEl('library-name').value.trim(); const content = getEl('setup-import').value.trim(); if (!name || !content || !user) return; const items = content.split('\n').map(s => s.trim()).filter(s => s.length > 0); if (items.length === 0) return; const libCol = collection(db, 'artifacts', appId, 'public', 'data', 'bubbleLibraries'); try { if (editingId) { await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bubbleLibraries', editingId), { name, items, timestamp: Date.now(), userId: user.uid }); selectedLibId = editingId; } else { const docRef = await addDoc(libCol, { name, items, timestamp: Date.now(), userId: user.uid }); selectedLibId = docRef.id; } getEl('current-selection-label').innerText = `Selected: ${name}`; window.closeImportModal(); window.backToStep2(); } catch (e) { console.error(e); } };
 
     const renderLibraryGrid = () => {
         const grid = getEl('lib-grid-container');
-        if (!grid) return;
-        grid.innerHTML = '';
-
-        const importBtn = document.createElement('div');
-        importBtn.className = "lib-card import-trigger";
-        importBtn.innerText = "+ Create New List";
-        importBtn.onclick = window.openImportModal;
-        grid.appendChild(importBtn);
-
-        const sorted = [...savedLibraries].sort((a, b) => {
-            if (librarySortBy === 'timestamp') {
-                return (b.timestamp || 0) - (a.timestamp || 0);
-            } else {
-                return (a.name || "").toLowerCase().localeCompare((b.name || "").toLowerCase());
-            }
-        });
-
+        if (!grid) return; grid.innerHTML = '';
+        const importBtn = document.createElement('div'); importBtn.className = "lib-card import-trigger"; importBtn.innerText = "+ Create New List"; importBtn.onclick = window.openImportModal; grid.appendChild(importBtn);
+        const sorted = [...savedLibraries].sort((a, b) => { if (librarySortBy === 'timestamp') { return (b.timestamp || 0) - (a.timestamp || 0); } else { return (a.name || "").toLowerCase().localeCompare((b.name || "").toLowerCase()); } });
         sorted.forEach(lib => {
-            const dateStr = lib.timestamp ? new Date(lib.timestamp).toLocaleDateString() : 'No date';
-            const card = document.createElement('div');
-            card.className = `lib-card ${selectedLibId === lib.id ? 'active' : ''}`;
-            card.innerHTML = `
-                <div style="position: absolute; top: 12px; left: 15px; font-size: 0.65rem; color: #94a3b8; font-weight: 700;">${dateStr}</div>
-                <div style="display:flex; flex-direction:column; gap: 5px;">
-                    <span>${lib.name}</span>
-                    <span style="font-size: 0.75rem; color: #64748b;">${lib.items?.length || 0} items</span>
-                </div>
-                <div class="lib-actions">
-                    <div class="action-btn btn-edit" onclick="event.stopPropagation(); window.editLibrary('${lib.id}')">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                    </div>
-                    <div class="action-btn btn-delete" onclick="event.stopPropagation(); window.deleteLibrary('${lib.id}')">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                    </div>
-                </div>
-            `;
-            card.onclick = () => window.selectLibrary(lib.id);
-            grid.appendChild(card);
+            const card = document.createElement('div'); card.className = `lib-card ${selectedLibId === lib.id ? 'active' : ''}`;
+            card.innerHTML = `<div style="position: absolute; top: 12px; left: 15px; font-size: 0.65rem; color: #94a3b8; font-weight: 700;">${lib.timestamp ? new Date(lib.timestamp).toLocaleDateString() : ''}</div><div style="display:flex; flex-direction:column; gap: 5px;"><span>${lib.name}</span><span style="font-size: 0.75rem; color: #64748b;">${lib.items?.length || 0} items</span></div><div class="lib-actions"><div class="action-btn btn-edit" onclick="event.stopPropagation(); window.editLibrary('${lib.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></div><div class="action-btn btn-delete" onclick="event.stopPropagation(); window.deleteLibrary('${lib.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></div></div>`;
+            card.onclick = () => window.selectLibrary(lib.id); grid.appendChild(card);
         });
     };
 
-    // --- GAME LOGIC ---
     window.startGame = function() {
         window.playClickSound();
-        if (!selectedLibId) {
-            const label = getEl('current-selection-label');
-            label.innerText = "❌ Please Choose a List First!";
-            label.style.color = "var(--danger)";
-            setTimeout(() => {
-                label.innerText = "No list selected";
-                label.style.color = "var(--primary-dark)";
-            }, 2000);
-            return;
-        }
+        if (!selectedLibId) { const label = getEl('current-selection-label'); label.innerText = "❌ Choose a List First!"; label.style.color = "var(--accent)"; setTimeout(() => { label.innerText = "No list selected"; label.style.color = "var(--primary-dark)"; }, 2000); return; }
         const found = savedLibraries.find(l => l.id === selectedLibId);
         if (!found || !found.items.length) return;
-
         const mix = getEl('mix-questions').checked;
         gameState.difficulty = getEl('game-difficulty').value;
-
         let list = [...found.items];
         if (mix) list = shuffleArray(list);
-
-        gameState.questions = list;
-        gameState.currentIndex = 0;
-
-        hide('setup-screen');
-        hide('end-screen');
-        show('game-screen');
-
-        loadQuestion();
-        startPhysicsLoop();
-
+        gameState.questions = list; gameState.currentIndex = 0;
+        hide('setup-screen'); hide('end-screen'); show('game-screen');
+        loadQuestion(); startPhysicsLoop();
         window.addEventListener('resize', updateContainerSize);
     };
 
     function loadQuestion() {
         const container = getEl('bubble-container');
-        
-        // Remove existing bubbles
         const existingBubbles = container.querySelectorAll('.bubble');
         existingBubbles.forEach(b => b.remove());
         
-        gameState.bubbles = []; // Clear physics array
+        gameState.bubbles = [];
         getEl('answer-overlay').classList.remove('visible');
         getEl('btn-show-answer').classList.remove('hidden');
         getEl('btn-next-question').classList.add('hidden');
 
+        // FIXED: Clear text immediately during reset
+        getEl('answer-text-display').innerText = "";
+
         const currentText = gameState.questions[gameState.currentIndex];
         getEl('question-counter').innerText = `Question ${gameState.currentIndex + 1} / ${gameState.questions.length}`;
-        getEl('answer-text-display').innerText = currentText;
+
+        // Wait just a tiny moment to ensure old text is gone before assigning new
+        setTimeout(() => {
+            getEl('answer-text-display').innerText = currentText;
+        }, 50);
 
         updateContainerSize();
-
-        // Determine chunks based on mode
-        let chunks = [];
-        if (gameState.mode === 'words') {
-            // Remove spaces and split into individual letters
-            chunks = currentText.replace(/\s+/g, '').split('');
-        } else {
-            // Split sentence into words
-            chunks = currentText.split(/\s+/);
-        }
-
-        // Set physics bounds based on difficulty
+        let chunks = gameState.mode === 'words' ? currentText.replace(/\s+/g, '').split('') : currentText.split(/\s+/);
         let baseSpeed, varSpeed;
         if (gameState.difficulty === 'easy') { baseSpeed = 1; varSpeed = 1.5; }
         else if (gameState.difficulty === 'normal') { baseSpeed = 2.5; varSpeed = 2; }
-        else { baseSpeed = 5; varSpeed = 4; } // Hard
+        else { baseSpeed = 5; varSpeed = 4; }
 
-        // Create DOM elements and Physics objects
         chunks.forEach((chunk, i) => {
             const el = document.createElement('div');
             el.className = `bubble mode-${gameState.mode}`;
             el.innerText = chunk;
             el.style.background = bubbleGradients[Math.floor(Math.random() * bubbleGradients.length)];
             el.style.animationDelay = `${i * 0.05}s`;
-            
             container.appendChild(el);
-
-            // Give the browser a tiny moment to render to get actual dimensions
             requestAnimationFrame(() => {
                 const rect = el.getBoundingClientRect();
-                const w = rect.width;
-                const h = rect.height;
-
-                // Initial velocity
+                const w = rect.width, h = rect.height;
                 let vx = (Math.random() * varSpeed + baseSpeed) * (Math.random() > 0.5 ? 1 : -1);
                 let vy = (Math.random() * varSpeed + baseSpeed) * (Math.random() > 0.5 ? 1 : -1);
-
-                // Initial position (center spread)
                 const x = (gameState.containerWidth / 2) - (w / 2) + (Math.random() * 100 - 50);
                 const y = (gameState.containerHeight / 2) - (h / 2) + (Math.random() * 100 - 50);
-
                 gameState.bubbles.push({ el, x, y, vx, vy, w, h });
             });
         });
     }
 
-    function updateContainerSize() {
-        const container = getEl('bubble-container');
-        const rect = container.getBoundingClientRect();
-        gameState.containerWidth = rect.width;
-        gameState.containerHeight = rect.height;
-    }
+    function updateContainerSize() { const rect = getEl('bubble-container').getBoundingClientRect(); gameState.containerWidth = rect.width; gameState.containerHeight = rect.height; }
 
     function startPhysicsLoop() {
         if (gameState.animationId) cancelAnimationFrame(gameState.animationId);
-        
         function update() {
             let bounceSoundPlayedThisFrame = false;
-
             gameState.bubbles.forEach(b => {
-                // In Hard mode, add occasional erratic directional changes
-                if (gameState.difficulty === 'hard' && Math.random() < 0.02) {
-                    b.vx += (Math.random() * 4 - 2);
-                    b.vy += (Math.random() * 4 - 2);
-                    
-                    // Clamp velocity so it doesn't spiral out of control
-                    const maxSpeed = 12;
-                    const minSpeed = 3;
-                    b.vx = Math.max(-maxSpeed, Math.min(maxSpeed, b.vx));
-                    b.vy = Math.max(-maxSpeed, Math.min(maxSpeed, b.vy));
-                    
-                    // Ensure it doesn't get too slow
-                    if (Math.abs(b.vx) < minSpeed) b.vx = minSpeed * Math.sign(b.vx || 1);
-                    if (Math.abs(b.vy) < minSpeed) b.vy = minSpeed * Math.sign(b.vy || 1);
-                }
-
-                // Update position
-                b.x += b.vx;
-                b.y += b.vy;
-
-                // Boundary Collision Detection (AABB)
+                if (gameState.difficulty === 'hard' && Math.random() < 0.02) { b.vx += (Math.random() * 4 - 2); b.vy += (Math.random() * 4 - 2); const maxSpeed = 12, minSpeed = 3; b.vx = Math.max(-maxSpeed, Math.min(maxSpeed, b.vx)); b.vy = Math.max(-maxSpeed, Math.min(maxSpeed, b.vy)); if (Math.abs(b.vx) < minSpeed) b.vx = minSpeed * Math.sign(b.vx || 1); if (Math.abs(b.vy) < minSpeed) b.vy = minSpeed * Math.sign(b.vy || 1); }
+                b.x += b.vx; b.y += b.vy;
                 let bounced = false;
-                if (b.x <= 0) { 
-                    b.x = 0; b.vx *= -1; bounced = true; 
-                } else if (b.x + b.w >= gameState.containerWidth) { 
-                    b.x = gameState.containerWidth - b.w; b.vx *= -1; bounced = true; 
-                }
-
-                if (b.y <= 0) { 
-                    b.y = 0; b.vy *= -1; bounced = true; 
-                } else if (b.y + b.h >= gameState.containerHeight) { 
-                    b.y = gameState.containerHeight - b.h; b.vy *= -1; bounced = true; 
-                }
-
-                if (bounced && !bounceSoundPlayedThisFrame) {
-                    window.playBounceSound();
-                    bounceSoundPlayedThisFrame = true; // Prevent sound spamming on same frame
-                }
-
-                // Apply transform for hardware acceleration
+                if (b.x <= 0) { b.x = 0; b.vx *= -1; bounced = true; } else if (b.x + b.w >= gameState.containerWidth) { b.x = gameState.containerWidth - b.w; b.vx *= -1; bounced = true; }
+                if (b.y <= 0) { b.y = 0; b.vy *= -1; bounced = true; } else if (b.y + b.h >= gameState.containerHeight) { b.y = gameState.containerHeight - b.h; b.vy *= -1; bounced = true; }
+                if (bounced && !bounceSoundPlayedThisFrame) { window.playBounceSound(); bounceSoundPlayedThisFrame = true; }
                 b.el.style.transform = `translate3d(${b.x}px, ${b.y}px, 0)`;
             });
-
             gameState.animationId = requestAnimationFrame(update);
         }
         update();
     }
 
-    window.showAnswer = function() {
-        window.playPopSound();
-        getEl('answer-overlay').classList.add('visible');
-        getEl('btn-show-answer').classList.add('hidden');
-        getEl('btn-next-question').classList.remove('hidden');
-    };
+    window.showAnswer = function() { window.playPopSound(); getEl('answer-overlay').classList.add('visible'); getEl('btn-show-answer').classList.add('hidden'); getEl('btn-next-question').classList.remove('hidden'); };
 
     window.nextQuestion = function() {
         window.playClickSound();
-        gameState.currentIndex++;
-        if (gameState.currentIndex >= gameState.questions.length) {
-            cancelAnimationFrame(gameState.animationId);
-            window.playVictorySound();
-            hide('game-screen');
-            show('end-screen');
-        } else {
-            loadQuestion();
-        }
+        // FIXED: Wait for overlay transition to finish before loading next question
+        getEl('answer-overlay').classList.remove('visible');
+        getEl('answer-text-display').innerText = ""; // Clear text immediately
+
+        setTimeout(() => {
+            gameState.currentIndex++;
+            if (gameState.currentIndex >= gameState.questions.length) {
+                cancelAnimationFrame(gameState.animationId);
+                window.playVictorySound();
+                hide('game-screen'); show('end-screen');
+            } else {
+                loadQuestion();
+            }
+        }, 300); // Wait 300ms for overlay fade to complete
     };
 
-    window.quitGame = function() {
-        window.playClickSound();
-        if (gameState.animationId) cancelAnimationFrame(gameState.animationId);
-        window.removeEventListener('resize', updateContainerSize);
-        hide('game-screen');
-        hide('end-screen');
-        
-        // Reset back to Step 1
-        hide('setup-step-2');
-        hide('setup-step-3');
-        show('setup-step-1');
-        show('setup-screen');
-    };
+    window.quitGame = function() { window.playClickSound(); if (gameState.animationId) cancelAnimationFrame(gameState.animationId); window.removeEventListener('resize', updateContainerSize); hide('game-screen'); hide('end-screen'); hide('setup-step-2'); hide('setup-step-3'); show('setup-step-1'); show('setup-screen'); };
 
-    // --- CLOUD INITIALIZATION ---
     const initApp = async () => {
         try {
             let firebaseConfig = null;
-            const hasPlatformConfig = typeof __firebase_config !== 'undefined' && __firebase_config;
-            
-            if (hasPlatformConfig) {
-                firebaseConfig = JSON.parse(__firebase_config);
-            } else if (EXTERNAL_CONFIG) {
-                firebaseConfig = EXTERNAL_CONFIG;
-            }
-
-            if (!firebaseConfig) throw new Error("No Firebase configuration found.");
-
-            const app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-            appId = typeof __app_id !== 'undefined' ? __app_id : 'bubble-game-global';
-            
-            onAuthStateChanged(auth, (u) => { 
-                user = u; 
-                if (u) setupCloudSync(); 
-            });
-
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else { 
-                await signInAnonymously(auth); 
-            }
-
-        } catch (e) { 
-            console.error("Initialization Error:", e);
-            let errorMsg = "Offline Mode (Cloud Unavailable)";
-            
-            // Helpful troubleshooting for Firebase setup
-            if (e.code === 'auth/operation-not-allowed' || e.code === 'auth/admin-restricted-operation') {
-                errorMsg = "Error: Please Enable 'Anonymous Auth' in Firebase Console.";
-            } else if (e.message) {
-                errorMsg = "Cloud Error: " + e.message.substring(0, 45);
-            }
-            
-            getEl('loading-text').innerText = errorMsg;
-            // Leave the message on screen longer so the user can read the specific error
-            setTimeout(() => hide('loading-overlay'), 5000);
-        }
+            if (typeof __firebase_config !== 'undefined') { firebaseConfig = JSON.parse(__firebase_config); } else { firebaseConfig = EXTERNAL_CONFIG; }
+            const app = initializeApp(firebaseConfig); auth = getAuth(app); db = getFirestore(app); appId = 'bubble-game-global';
+            onAuthStateChanged(auth, (u) => { user = u; if (u) setupCloudSync(); });
+            await signInAnonymously(auth);
+        } catch (e) { getEl('loading-text').innerText = "Offline Mode (Cloud Unavailable)"; setTimeout(() => hide('loading-overlay'), 3000); }
     };
 
     const setupCloudSync = () => {
         if (!user) return;
         const libCol = collection(db, 'artifacts', appId, 'public', 'data', 'bubbleLibraries');
-        const q = query(libCol);
-        onSnapshot(q, (snap) => {
-            savedLibraries = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            renderLibraryGrid();
-            hide('loading-overlay');
-        }, (err) => {
-            console.error("Cloud Sync failed", err);
-            getEl('loading-text').innerText = "Cloud Sync Error: Check Firestore Rules.";
-            setTimeout(() => hide('loading-overlay'), 4000);
-        });
+        onSnapshot(query(libCol), (snap) => { savedLibraries = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); renderLibraryGrid(); hide('loading-overlay'); }, (err) => { hide('loading-overlay'); });
     };
 
     initApp();
