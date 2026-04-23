@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BUBBLES</title>
+    <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-grad-1: #0f172a;
+            --bg-grad-2: #1e1b4b;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --accent: #f43f5e;
+            --accent-dark: #e11d48;
+            --success: #10b981;
+        }
+
+        * { box-sizing: border-box; user-select: none; }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, var(--bg-grad-1), var(--bg-grad-2));
+            color: #1e293b;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* Utility Classes */
+        .hidden { display: none !important; }
+        
+        /* Typography */
+        h1.title {
+            font-family: 'Luckiest Guy', cursive;
+            font-size: 5rem;
+            text-align: center;
+            margin: 0 0 10px 0;
+            background: linear-gradient(to bottom, #60a5fa, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0px 4px 0px rgba(0,0,0,0.3));
+            letter-spacing: 4px;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-weight: 800;
+            color: #64748b;
+            margin-bottom: 30px;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* Setup Screen */
+        #setup-screen {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            width: 90%;
+            max-width: 700px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Mode Selection Cards */
+        .mode-cards {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .mode-card {
+            flex: 1;
+            padding: 50px 20px;
+            background: #f8fafc;
+            border: 4px solid #cbd5e1;
+            border-radius: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .mode-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--primary);
+            background: #eff6ff;
+            box-shadow: 0 15px 25px -5px rgba(59, 130, 246, 0.2);
+        }
+
+        .mode-title {
+            font-size: 2rem;
+            font-weight: 900;
+            color: #0f172a;
+        }
+
+        .mode-desc {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #64748b;
+        }
+
+        .mode-icon {
+            font-size: 3rem;
+        }
+
+        @media (max-width: 600px) {
+            .mode-cards { flex-direction: column; }
+            .mode-card { padding: 30px 20px; }
+        }
+
+        /* Step 2 Forms */
+        .input-group { margin-bottom: 25px; }
+        .input-group label { display: block; font-weight: 900; margin-bottom: 10px; color: #334155; text-transform: uppercase; letter-spacing: 1px; }
+        
+        select, textarea {
+            width: 100%;
+            padding: 15px;
+            border-radius: 16px;
+            border: 3px solid #e2e8f0;
+            font-family: 'Nunito', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: border-color 0.2s;
+            background: #f8fafc;
+        }
+        select:focus, textarea:focus { outline: none; border-color: var(--primary); background: #ffffff; }
+        textarea { height: 160px; resize: vertical; }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            font-weight: 800;
+            font-size: 1.1rem;
+            color: #334155;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 16px;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: 24px; height: 24px; accent-color: var(--primary); cursor: pointer;
+        }
+
+        .setup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 2px dashed #e2e8f0;
+        }
+
+        .selected-mode-badge {
+            background: var(--primary);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-weight: 900;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Buttons */
+        button {
+            width: 100%; padding: 18px; border: none; border-radius: 16px;
+            font-family: 'Nunito', sans-serif; font-size: 1.4rem; font-weight: 900;
+            cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 2px;
+            display: flex; justify-content: center; align-items: center; gap: 10px;
+        }
+        .btn-play { background: var(--primary); color: white; box-shadow: 0 8px 0 var(--primary-dark); }
+        .btn-play:hover { transform: translateY(4px); box-shadow: 0 4px 0 var(--primary-dark); }
+        .btn-play:active { transform: translateY(8px); box-shadow: 0 0 0 var(--primary-dark); }
+
+        .btn-secondary { background: #f1f5f9; color: #64748b; font-size: 1rem; padding: 12px 20px; box-shadow: 0 4px 0 #cbd5e1; width: auto; border-radius: 12px; }
+        .btn-secondary:hover { transform: translateY(2px); box-shadow: 0 2px 0 #cbd5e1; }
+        
+        .btn-action { background: var(--accent); color: white; box-shadow: 0 6px 0 var(--accent-dark); width: auto; padding: 15px 40px; }
+        .btn-action:hover { transform: translateY(3px); box-shadow: 0 3px 0 var(--accent-dark); }
+        .btn-action:active { transform: translateY(6px); box-shadow: 0 0 0 var(--accent-dark); }
+        
+        .btn-next { background: var(--success); color: white; box-shadow: 0 6px 0 #047857; width: auto; padding: 15px 40px; }
+        .btn-next:hover { transform: translateY(3px); box-shadow: 0 3px 0 #047857; }
+
+        /* Game Screen */
+        #game-screen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            display: flex; flex-direction: column; z-index: 5;
+        }
+
+        .hud {
+            padding: 20px 40px; display: flex; justify-content: space-between; align-items: center;
+            background: rgba(0,0,0,0.3); backdrop-filter: blur(10px); z-index: 20;
+        }
+        .hud-text { font-size: 1.5rem; font-weight: 900; color: white; letter-spacing: 2px; }
+
+        #bubble-container {
+            flex: 1; position: relative; overflow: hidden; width: 100%;
+            background-image: radial-gradient(rgba(255,255,255,0.05) 2px, transparent 2px);
+            background-size: 40px 40px;
+        }
+
+        .controls {
+            padding: 30px; display: flex; justify-content: center; gap: 20px;
+            background: rgba(0,0,0,0.3); backdrop-filter: blur(10px); z-index: 20;
+        }
+
+        /* Bubbles */
+        .bubble {
+            position: absolute;
+            top: 0; left: 0;
+            display: flex; justify-content: center; align-items: center;
+            color: white; font-weight: 900;
+            border-radius: 100px;
+            box-shadow: inset -5px -5px 15px rgba(0,0,0,0.3), inset 5px 5px 15px rgba(255,255,255,0.4), 0 10px 20px rgba(0,0,0,0.5);
+            border: 2px solid rgba(255,255,255,0.2);
+            will-change: transform;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .bubble.mode-words {
+            width: 80px; height: 80px; font-size: 2.5rem; text-transform: uppercase;
+        }
+        .bubble.mode-sentences {
+            padding: 15px 30px; font-size: 1.8rem; height: auto; width: auto;
+            border-radius: 50px;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Answer Overlay */
+        #answer-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(15px);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 30; flex-direction: column;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        #answer-overlay.visible { opacity: 1; pointer-events: all; }
+        
+        .answer-box {
+            background: white; padding: 50px; border-radius: 32px;
+            text-align: center; max-width: 90%; transform: scale(0.8);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5); border: 8px solid #cbd5e1;
+        }
+        #answer-overlay.visible .answer-box { transform: scale(1); }
+        
+        .answer-label { color: #94a3b8; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 10px; }
+        .answer-text { font-size: 4rem; font-weight: 900; color: #0f172a; margin: 0; line-height: 1.2; word-wrap: break-word; }
+
+        /* End Screen */
+        #end-screen {
+            background: var(--card-bg); padding: 50px; border-radius: 32px;
+            text-align: center; z-index: 40; box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+        }
+        .end-icon { font-size: 6rem; margin-bottom: 10px; }
+
+        /* Cloud UI Styles */
+        .lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; max-height: 400px; overflow-y: auto; padding: 10px; }
+        .lib-card { background: white; border: 2px solid #dcfce7; border-radius: 20px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 700; color: var(--text-main); position: relative; min-height: 120px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .lib-card:hover { transform: translateY(-5px); border-color: var(--primary); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .lib-card.active { background: #dcfce7; border-color: var(--primary); box-shadow: inset 0 0 0 2px var(--primary); }
+        .lib-actions { position: absolute; top: 10px; right: 10px; display: flex; gap: 8px; opacity: 0; transition: opacity 0.2s; }
+        .lib-card:hover .lib-actions { opacity: 1; }
+        .action-btn { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s; }
+        .btn-edit { background: #fef3c7; color: #d97706; }
+        .btn-delete { background: #fee2e2; color: #dc2626; }
+        .lib-card.import-trigger { border: 2px dashed var(--primary); color: var(--primary); background: transparent; font-size: 1.2rem; }
+        .lib-card.import-trigger:hover { background: #f0fdf4; }
+        
+        #import-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 200; backdrop-filter: blur(4px); }
+        .import-modal { background: white; width: 95%; max-width: 600px; padding: 30px; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
+        
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; font-weight: 800; color: var(--primary-dark); }
+        .spinner { border: 4px solid rgba(0,0,0,0.1); width: 40px; height: 40px; border-radius: 50%; border-left-color: var(--primary); animation: spin 1s linear infinite; margin-bottom: 10px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #current-selection-label { font-weight: 600; color: var(--primary-dark); margin-bottom: 20px; background: #dcfce7; padding: 10px 15px; border-radius: 12px; display: inline-block; transition: color 0.3s; }
+
+        @media (max-width: 768px) {
+            h1.title { font-size: 3.5rem; }
+            .bubble.mode-words { width: 60px; height: 60px; font-size: 1.8rem; }
+            .bubble.mode-sentences { padding: 10px 20px; font-size: 1.3rem; }
+            .answer-text { font-size: 2.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LOADING OVERLAY -->
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <div id="loading-text">Connecting to Cloud...</div>
+    </div>
+
+    <!-- SETUP SCREEN -->
+    <div id="setup-screen">
+        
+        <!-- STEP 1: Select Mode -->
+        <div id="setup-step-1">
+            <h1 class="title">BUBBLES</h1>
+            <div class="subtitle">Select your game mode</div>
+
+            <div class="mode-cards">
+                <div class="mode-card" onclick="selectMode('words')">
+                    <div class="mode-icon">🔤</div>
+                    <div class="mode-title">WORDS</div>
+                    <div class="mode-desc">Letters fly around. Guess the word.</div>
+                </div>
+                <div class="mode-card" onclick="selectMode('sentences')">
+                    <div class="mode-icon">💬</div>
+                    <div class="mode-title">SENTENCES</div>
+                    <div class="mode-desc">Words fly around. Guess the sentence.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STEP 2: Configure List & Difficulty -->
+    <div id="setup-step-2" class="hidden">
+        <div class="setup-header">
+            <button class="btn-secondary" onclick="backToStep1()">← Back</button>
+            <div class="selected-mode-badge" id="mode-badge">MODE: WORDS</div>
+        </div>
+
+        <div class="input-group">
+            <label>Difficulty</label>
+            <select id="game-difficulty">
+                <option value="easy">🟩 Easy (Slow, simple directions)</option>
+                <option value="normal" selected>🟨 Normal (Medium speed)</option>
+                <option value="hard">🟥 Hard (Fast, erratic directions)</option>
+            </select>
+        </div>
+
+        <div style="text-align: center; margin-bottom: 10px;">
+            <div id="current-selection-label">No list selected</div><br>
+            <button class="btn-secondary" onclick="goToLibraryStep()" style="font-size: 1rem; padding: 12px 24px; margin: 0 auto 20px auto;">Choose Question List</button>
+        </div>
+
+        <label class="checkbox-group">
+            <input type="checkbox" id="mix-questions" checked>
+            Mix the questions randomly
+        </label>
+
+        <button class="btn-play" onclick="startGame()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            START GAME
+        </button>
+    </div>
+
+    <!-- STEP 3: Cloud Library -->
+    <div id="setup-step-3" class="hidden">
+        <div class="setup-header">
+            <button class="btn-secondary" onclick="backToStep2()">← Back</button>
+            <label class="setup-label" style="margin: 0;">Cloud Library</label>
+        </div>
+        
+        <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center; justify-content: flex-end;">
+            <label class="setup-label" style="margin: 0; font-size: 0.75rem;">Sort By:</label>
+            <select id="lib-sort-select" class="setup-select" style="width: auto; padding: 8px; font-size: 0.75rem;" onchange="window.handleSortChange(this.value)">
+                <option value="timestamp">Newest First</option>
+                <option value="name">Name (A-Z)</option>
+            </select>
+        </div>
+
+        <div class="lib-grid" id="lib-grid-container"></div>
+    </div>
+
+</div>
+
+<!-- Manual Import Modal -->
+<div id="import-overlay" class="hidden">
+    <div class="import-modal">
+        <label id="modal-title" class="setup-label">Import & Save Words/Sentences</label>
+        <textarea id="setup-import" class="setup-textarea" placeholder="Item 1&#10;Item 2&#10;Item 3"></textarea>
+        <input type="text" id="library-name" class="setup-input" placeholder="List Name (e.g. Unit 5)" style="margin-bottom: 20px;">
+        <div style="display: flex; gap: 10px;">
+            <button class="btn-secondary" onclick="closeImportModal()" style="flex: 1; justify-content: center; padding: 15px;">Cancel</button>
+            <button class="btn-next" onclick="saveToLibrary()" style="flex: 1; justify-content: center; padding: 15px;">Save to Cloud</button>
+        </div>
+    </div>
+</div>
+
+<!-- GAME SCREEN -->
+    <div id="game-screen" class="hidden">
+        <div class="hud">
+            <button class="btn-secondary" onclick="quitGame()">← Quit</button>
+            <div class="hud-text" id="question-counter">Question 1 / 10</div>
+        </div>
+
+        <div id="bubble-container">
+            <!-- Bubbles get injected here via JS -->
+            
+            <!-- Answer Overlay -->
+            <div id="answer-overlay">
+                <div class="answer-box">
+                    <div class="answer-label">The Answer is</div>
+                    <h2 class="answer-text" id="answer-text-display">APPLE</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="btn-show-answer" class="btn-action" onclick="showAnswer()">SHOW ANSWER</button>
+            <button id="btn-next-question" class="btn-next hidden" onclick="nextQuestion()">NEXT QUESTION →</button>
+        </div>
+    </div>
+
+    <!-- END SCREEN -->
+    <div id="end-screen" class="hidden">
+        <div class="end-icon">🎉</div>
+        <h1 class="title" style="font-size: 3rem; margin-bottom: 10px;">GREAT JOB!</h1>
+        <p style="font-size: 1.5rem; font-weight: 800; color: #475569; margin-bottom: 30px;">You've finished all the bubbles.</p>
+        <button class="btn-play" onclick="quitGame()">PLAY AGAIN</button>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, onSnapshot, doc, setDoc, deleteDoc, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // --- FIREBASE CONFIG ---
+    const EXTERNAL_CONFIG = {
+        apiKey: "AIzaSyBsxFf5oahfu6woX4y5XlU_O56e7SMZH-4",
+        authDomain: "bubbles-bd1ac.firebaseapp.com",
+        projectId: "bubbles-bd1ac",
+        storageBucket: "bubbles-bd1ac.firebasestorage.app",
+        messagingSenderId: "335805617916",
+        appId: "1:335805617916:web:8933c2b8f474f4ea352979",
+        measurementId: "G-QCKKMDR119"
+    }; 
+
+    let user = null;
+    let savedLibraries = [];
+    let librarySortBy = 'timestamp';
+    let selectedLibId = null;
+    let editingId = null;
+    let auth, db, appId;
+
+    // --- GAME STATE ---
+    const gameState = {
+            mode: 'words',
+            difficulty: 'normal',
+            questions: [],
+            currentIndex: 0,
+            bubbles: [], // Physics objects
+            animationId: null,
+            containerWidth: 0,
+            containerHeight: 0
+        };
+
+        // --- COLORS FOR BUBBLES ---
+        const bubbleGradients = [
+            'linear-gradient(135deg, #f43f5e, #e11d48)', // Rose
+            'linear-gradient(135deg, #3b82f6, #2563eb)', // Blue
+            'linear-gradient(135deg, #10b981, #059669)', // Emerald
+            'linear-gradient(135deg, #f59e0b, #d97706)', // Amber
+            'linear-gradient(135deg, #8b5cf6, #6d28d9)', // Violet
+            'linear-gradient(135deg, #06b6d4, #0284c7)'  // Cyan
+        ];
+
+        // --- UTILS ---
+    const getEl = id => document.getElementById(id);
+    const hide = id => getEl(id).classList.add('hidden');
+    const show = id => getEl(id).classList.remove('hidden');
+
+    // Export utils to window for inline onclick handlers
+    window.getEl = getEl;
+    window.hide = hide;
+    window.show = show;
+
+    function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function playPopSound() {
+        try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            } catch(e) {}
+    }
+
+    // --- CLOUD SETUP LOGIC ---
+    window.selectMode = function(mode) {
+        gameState.mode = mode;
+        getEl('mode-badge').innerText = `MODE: ${mode.toUpperCase()}`;
+        hide('setup-step-1');
+        show('setup-step-2');
+    };
+
+    window.backToStep1 = function() {
+        hide('setup-step-2');
+        show('setup-step-1');
+    };
+
+    window.goToLibraryStep = function() {
+        hide('setup-step-2');
+        show('setup-step-3');
+    };
+
+    window.backToStep2 = function() {
+        hide('setup-step-3');
+        show('setup-step-2');
+    };
+
+    window.openImportModal = function() {
+        if (!editingId) {
+            getEl('modal-title').innerText = "Import & Save Words/Sentences";
+            getEl('library-name').value = '';
+            getEl('setup-import').value = '';
+        }
+        show('import-overlay');
+    };
+
+    window.closeImportModal = function() {
+        editingId = null;
+        hide('import-overlay');
+    };
+
+    window.handleSortChange = function(val) {
+        librarySortBy = val;
+        renderLibraryGrid();
+    };
+
+    window.selectLibrary = function(id) {
+        selectedLibId = id;
+        const found = savedLibraries.find(l => l.id === id);
+        getEl('current-selection-label').innerText = found ? `Selected: ${found.name}` : "No list selected";
+        window.backToStep2();
+    };
+
+    window.deleteLibrary = async function(id) {
+        if (user && db) {
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bubbleLibraries', id));
+                if (selectedLibId === id) {
+                    selectedLibId = null;
+                    getEl('current-selection-label').innerText = "No list selected";
+                }
+            } catch (e) { console.error("Cloud Delete failed", e); }
+        }
+    };
+
+    window.editLibrary = function(id) {
+        const lib = savedLibraries.find(l => l.id === id);
+        if (!lib) return;
+        editingId = id;
+        getEl('modal-title').innerText = "Edit List";
+        getEl('library-name').value = lib.name;
+        getEl('setup-import').value = lib.items.join('\n');
+        window.openImportModal();
+    };
+
+    window.saveToLibrary = async function() {
+        const name = getEl('library-name').value.trim();
+        const content = getEl('setup-import').value.trim();
+        if (!name || !content || !user) return;
+        
+        const items = content.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+        if (items.length === 0) return;
+
+        const libCol = collection(db, 'artifacts', appId, 'public', 'data', 'bubbleLibraries');
+        try {
+            if (editingId) {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bubbleLibraries', editingId), { 
+                    name, items, timestamp: Date.now(), userId: user.uid 
+                });
+                selectedLibId = editingId;
+            } else {
+                const docRef = await addDoc(libCol, { 
+                    name, items, timestamp: Date.now(), userId: user.uid 
+                });
+                selectedLibId = docRef.id;
+            }
+            getEl('current-selection-label').innerText = `Selected: ${name}`;
+            window.closeImportModal();
+            window.backToStep2();
+        } catch (e) { console.error("Cloud Save failed", e); } 
+    };
+
+    const renderLibraryGrid = () => {
+        const grid = getEl('lib-grid-container');
+        if (!grid) return;
+        grid.innerHTML = '';
+
+        const importBtn = document.createElement('div');
+        importBtn.className = "lib-card import-trigger";
+        importBtn.innerText = "+ Create New List";
+        importBtn.onclick = window.openImportModal;
+        grid.appendChild(importBtn);
+
+        const sorted = [...savedLibraries].sort((a, b) => {
+            if (librarySortBy === 'timestamp') {
+                return (b.timestamp || 0) - (a.timestamp || 0);
+            } else {
+                return (a.name || "").toLowerCase().localeCompare((b.name || "").toLowerCase());
+            }
+        });
+
+        sorted.forEach(lib => {
+            const dateStr = lib.timestamp ? new Date(lib.timestamp).toLocaleDateString() : 'No date';
+            const card = document.createElement('div');
+            card.className = `lib-card ${selectedLibId === lib.id ? 'active' : ''}`;
+            card.innerHTML = `
+                <div style="position: absolute; top: 12px; left: 15px; font-size: 0.65rem; color: #94a3b8; font-weight: 700;">${dateStr}</div>
+                <div style="display:flex; flex-direction:column; gap: 5px;">
+                    <span>${lib.name}</span>
+                    <span style="font-size: 0.75rem; color: #64748b;">${lib.items?.length || 0} items</span>
+                </div>
+                <div class="lib-actions">
+                    <div class="action-btn btn-edit" onclick="event.stopPropagation(); window.editLibrary('${lib.id}')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    </div>
+                    <div class="action-btn btn-delete" onclick="event.stopPropagation(); window.deleteLibrary('${lib.id}')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </div>
+                </div>
+            `;
+            card.onclick = () => window.selectLibrary(lib.id);
+            grid.appendChild(card);
+        });
+    };
+
+    // --- GAME LOGIC ---
+    window.startGame = function() {
+        if (!selectedLibId) {
+            const label = getEl('current-selection-label');
+            label.innerText = "❌ Please Choose a List First!";
+            label.style.color = "var(--danger)";
+            setTimeout(() => {
+                label.innerText = "No list selected";
+                label.style.color = "var(--primary-dark)";
+            }, 2000);
+            return;
+        }
+        const found = savedLibraries.find(l => l.id === selectedLibId);
+        if (!found || !found.items.length) return;
+
+        const mix = getEl('mix-questions').checked;
+        gameState.difficulty = getEl('game-difficulty').value;
+
+        let list = [...found.items];
+        if (mix) list = shuffleArray(list);
+
+        gameState.questions = list;
+        gameState.currentIndex = 0;
+
+        hide('setup-screen');
+        hide('end-screen');
+        show('game-screen');
+
+        loadQuestion();
+        startPhysicsLoop();
+
+        window.addEventListener('resize', updateContainerSize);
+    };
+
+    function loadQuestion() {
+            const container = getEl('bubble-container');
+            
+            // Remove existing bubbles
+            const existingBubbles = container.querySelectorAll('.bubble');
+            existingBubbles.forEach(b => b.remove());
+            
+            gameState.bubbles = []; // Clear physics array
+            getEl('answer-overlay').classList.remove('visible');
+            getEl('btn-show-answer').classList.remove('hidden');
+            getEl('btn-next-question').classList.add('hidden');
+
+            const currentText = gameState.questions[gameState.currentIndex];
+            getEl('question-counter').innerText = `Question ${gameState.currentIndex + 1} / ${gameState.questions.length}`;
+            getEl('answer-text-display').innerText = currentText;
+
+            updateContainerSize();
+
+            // Determine chunks based on mode
+            let chunks = [];
+            if (gameState.mode === 'words') {
+                // Remove spaces and split into individual letters
+                chunks = currentText.replace(/\s+/g, '').split('');
+            } else {
+                // Split sentence into words
+                chunks = currentText.split(/\s+/);
+            }
+
+            // Set physics bounds based on difficulty
+            let baseSpeed, varSpeed;
+            if (gameState.difficulty === 'easy') { baseSpeed = 1; varSpeed = 1.5; }
+            else if (gameState.difficulty === 'normal') { baseSpeed = 2.5; varSpeed = 2; }
+            else { baseSpeed = 5; varSpeed = 4; } // Hard
+
+            // Create DOM elements and Physics objects
+            chunks.forEach((chunk, i) => {
+                const el = document.createElement('div');
+                el.className = `bubble mode-${gameState.mode}`;
+                el.innerText = chunk;
+                el.style.background = bubbleGradients[Math.floor(Math.random() * bubbleGradients.length)];
+                el.style.animationDelay = `${i * 0.05}s`;
+                
+                container.appendChild(el);
+
+                // Give the browser a tiny moment to render to get actual dimensions
+                requestAnimationFrame(() => {
+                    const rect = el.getBoundingClientRect();
+                    const w = rect.width;
+                    const h = rect.height;
+
+                    // Initial velocity
+                    let vx = (Math.random() * varSpeed + baseSpeed) * (Math.random() > 0.5 ? 1 : -1);
+                    let vy = (Math.random() * varSpeed + baseSpeed) * (Math.random() > 0.5 ? 1 : -1);
+
+                    // Initial position (center spread)
+                    const x = (gameState.containerWidth / 2) - (w / 2) + (Math.random() * 100 - 50);
+                    const y = (gameState.containerHeight / 2) - (h / 2) + (Math.random() * 100 - 50);
+
+                    gameState.bubbles.push({ el, x, y, vx, vy, w, h });
+                });
+            });
+        }
+
+        function updateContainerSize() {
+            const container = getEl('bubble-container');
+            const rect = container.getBoundingClientRect();
+            gameState.containerWidth = rect.width;
+            gameState.containerHeight = rect.height;
+        }
+
+        function startPhysicsLoop() {
+        if (gameState.animationId) cancelAnimationFrame(gameState.animationId);
+        
+        function update() {
+            gameState.bubbles.forEach(b => {
+                    
+                    // In Hard mode, add occasional erratic directional changes
+                    if (gameState.difficulty === 'hard' && Math.random() < 0.02) {
+                        b.vx += (Math.random() * 4 - 2);
+                        b.vy += (Math.random() * 4 - 2);
+                        
+                        // Clamp velocity so it doesn't spiral out of control
+                        const maxSpeed = 12;
+                        const minSpeed = 3;
+                        b.vx = Math.max(-maxSpeed, Math.min(maxSpeed, b.vx));
+                        b.vy = Math.max(-maxSpeed, Math.min(maxSpeed, b.vy));
+                        
+                        // Ensure it doesn't get too slow
+                        if (Math.abs(b.vx) < minSpeed) b.vx = minSpeed * Math.sign(b.vx || 1);
+                        if (Math.abs(b.vy) < minSpeed) b.vy = minSpeed * Math.sign(b.vy || 1);
+                    }
+
+                    // Update position
+                    b.x += b.vx;
+                    b.y += b.vy;
+
+                    // Boundary Collision Detection (AABB)
+                    let bounced = false;
+                    if (b.x <= 0) { 
+                        b.x = 0; b.vx *= -1; bounced = true; 
+                    } else if (b.x + b.w >= gameState.containerWidth) { 
+                        b.x = gameState.containerWidth - b.w; b.vx *= -1; bounced = true; 
+                    }
+
+                    if (b.y <= 0) { 
+                        b.y = 0; b.vy *= -1; bounced = true; 
+                    } else if (b.y + b.h >= gameState.containerHeight) { 
+                        b.y = gameState.containerHeight - b.h; b.vy *= -1; bounced = true; 
+                    }
+
+                    // Apply transform for hardware acceleration
+                    b.el.style.transform = `translate3d(${b.x}px, ${b.y}px, 0)`;
+            });
+
+            gameState.animationId = requestAnimationFrame(update);
+        }
+        update();
+    }
+
+    window.showAnswer = function() {
+        playPopSound();
+        getEl('answer-overlay').classList.add('visible');
+        getEl('btn-show-answer').classList.add('hidden');
+        getEl('btn-next-question').classList.remove('hidden');
+    };
+
+    window.nextQuestion = function() {
+        gameState.currentIndex++;
+        if (gameState.currentIndex >= gameState.questions.length) {
+            cancelAnimationFrame(gameState.animationId);
+            hide('game-screen');
+            show('end-screen');
+        } else {
+            loadQuestion();
+        }
+    };
+
+    window.quitGame = function() {
+        if (gameState.animationId) cancelAnimationFrame(gameState.animationId);
+        window.removeEventListener('resize', updateContainerSize);
+        hide('game-screen');
+        hide('end-screen');
+        
+        // Reset back to Step 1
+        hide('setup-step-2');
+        hide('setup-step-3');
+        show('setup-step-1');
+        show('setup-screen');
+    };
+
+    // --- CLOUD INITIALIZATION ---
+    const initApp = async () => {
+        try {
+            let firebaseConfig = null;
+            const hasPlatformConfig = typeof __firebase_config !== 'undefined' && __firebase_config;
+            
+            if (hasPlatformConfig) {
+                firebaseConfig = JSON.parse(__firebase_config);
+            } else if (EXTERNAL_CONFIG) {
+                firebaseConfig = EXTERNAL_CONFIG;
+            }
+
+            if (!firebaseConfig) throw new Error("No Firebase configuration found.");
+
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            appId = typeof __app_id !== 'undefined' ? __app_id : 'bubble-game-global';
+            
+            onAuthStateChanged(auth, (u) => { 
+                user = u; 
+                if (u) setupCloudSync(); 
+            });
+
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else { 
+                await signInAnonymously(auth); 
+            }
+
+        } catch (e) { 
+            console.error("Initialization Error:", e);
+            getEl('loading-text').innerText = "Offline Mode (Cloud Unavailable)";
+            setTimeout(() => hide('loading-overlay'), 3000);
+        }
+    };
+
+    const setupCloudSync = () => {
+        if (!user) return;
+        const libCol = collection(db, 'artifacts', appId, 'public', 'data', 'bubbleLibraries');
+        const q = query(libCol);
+        onSnapshot(q, (snap) => {
+            savedLibraries = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderLibraryGrid();
+            hide('loading-overlay');
+        }, (err) => {
+            console.error("Cloud Sync failed", err);
+            getEl('loading-text').innerText = "Cloud Sync Issue";
+            setTimeout(() => hide('loading-overlay'), 2000);
+        });
+    };
+
+    initApp();
+</script>
+</body>
+</html>
