@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Present Grammar Quiz</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .app-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 600px;
+        }
+        h2 { color: #800000; margin-top: 0;}
+        h3 { color: #800000; font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 5px;}
+        .question { margin-bottom: 15px; font-size: 1.1em;}
+        select, input[type="text"] {
+            padding: 5px;
+            font-size: 1em;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .radio-group { margin-bottom: 10px; }
+        .radio-group label { margin-right: 15px; cursor: pointer; }
+        .btn-container { margin-top: 25px; text-align: right; }
+        button {
+            background-color: #0056b3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover { background-color: #004494; }
+        .hidden { display: none; }
+        
+        /* Results Styling */
+        .result-item { margin-bottom: 15px; padding: 10px; border-radius: 5px; background: #f9f9f9;}
+        .correct { color: #155724; font-weight: bold; }
+        .incorrect { color: #721c24; font-weight: bold; }
+        .correct-answer-text { color: #155724; font-size: 0.9em; display: block; margin-top: 5px;}
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div id="quiz-content"></div>
+
+    <div class="btn-container">
+        <button id="next-btn" onclick="nextPart()">Next Part</button>
+        <button id="show-answers-btn" class="hidden" onclick="showAnswers()">Show Answers</button>
+    </div>
+</div>
+
+<script>
+    // --- Quiz Data Structure ---
+    // Note: The content has been changed as requested, but the forms remain identical to your images.
+    const quizData = [
+        {
+            partTitle: "Form of Affirmative Sentences - Part 1",
+            instruction: "Choose the correct form.",
+            type: "dropdown",
+            questions: [
+                { q: "1. They usually", options: ["play", "plays"], after: "football.", answer: "play" },
+                { q: "2. Sarah", options: ["watch", "watches"], after: "TV every evening.", answer: "watches" },
+                { q: "3. The cat often", options: ["sleep", "sleeps"], after: "on the sofa.", answer: "sleeps" },
+                { q: "4. My brother and I", options: ["walk", "walks"], after: "to school.", answer: "walk" },
+                { q: "5. You always", options: ["finish", "finishes"], after: "your dinner.", answer: "finish" }
+            ]
+        },
+        {
+            partTitle: "Form of Affirmative Sentences - Part 2",
+            instruction: "Put the verbs into the correct form.",
+            type: "input",
+            questions: [
+                { q: "1. We (to enjoy)", after: "pizza very much.", answer: "enjoy" },
+                { q: "2. The dog always (to bark)", after: "at strangers.", answer: "barks" },
+                { q: "3. Tom never (to clean)", after: "his room.", answer: "cleans" },
+                { q: "4. Mrs. Johnson (to teach)", after: "math and science.", answer: "teaches" },
+                { q: "5. I (to do)", after: "the laundry on weekends.", answer: "do" }
+            ]
+        },
+        {
+            partTitle: "Simple present with 'have' and 'be'",
+            instruction: "Fill in the correct form of the verbs.",
+            type: "input",
+            questions: [
+                { q: "1. They (to have)", after: "a big house.", answer: "have" },
+                { q: "2. He (to be)", after: "ten years old.", answer: "is" },
+                { q: "3. Mary (to have)", after: "three cats and a dog.", answer: "has" },
+                { q: "4. We (to be)", after: "from London, UK.", answer: "are" },
+                { q: "5. I (to be)", after: "John's friend.", answer: "am" }
+            ]
+        },
+        {
+            partTitle: "Negative Sentences and Questions",
+            instruction: "Make negative sentences or questions.",
+            type: "input-full",
+            questions: [
+                { q: "1. My mother cooks dinner. →", answer: "My mother doesn't cook dinner." },
+                { q: "2. They are tired. →", answer: "They aren't tired." },
+                { q: "3. He reads a book. →", answer: "He doesn't read a book." },
+                { q: "4. you / to play / tennis →", answer: "Do you play tennis?" },
+                { q: "5. where / they / to live →", answer: "Where do they live?" }
+            ]
+        },
+        {
+            partTitle: "Signal Words",
+            instruction: "Find the signal words for simple present.",
+            type: "radio",
+            questions: [
+                { q: "1. Which is a signal word for simple present?", options: ["tomorrow", "usually", "yesterday"], answer: "usually" },
+                { q: "2. Which is a signal word for simple present?", options: ["always", "right now", "next week"], answer: "always" },
+                { q: "3. Which is a signal word for simple present?", options: ["every day", "last year", "in 2010"], answer: "every day" },
+                { q: "4. Which is NOT a signal word for simple present?", options: ["often", "never", "tomorrow"], answer: "tomorrow" },
+                { q: "5. Which is NOT a signal word for simple present?", options: ["Look!", "normally", "sometimes"], answer: "Look!" }
+            ]
+        }
+    ];
+
+    let currentPartIndex = 0;
+    let userAnswers = [];
+
+    // --- Core Logic ---
+
+    function renderPart() {
+        const part = quizData[currentPartIndex];
+        const container = document.getElementById('quiz-content');
+        let html = `<h2>${part.partTitle}</h2><p style="color:#800000;">${part.instruction}</p>`;
+
+        part.questions.forEach((item, index) => {
+            html += `<div class="question">`;
+            
+            if (part.type === "dropdown") {
+                html += `${item.q} <select id="q_${currentPartIndex}_${index}">
+                            <option value=""></option>
+                            ${item.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                         </select> ${item.after}`;
+            } 
+            else if (part.type === "input") {
+                html += `${item.q} <input type="text" id="q_${currentPartIndex}_${index}" size="10"> ${item.after}`;
+            }
+            else if (part.type === "input-full") {
+                html += `${item.q} <input type="text" id="q_${currentPartIndex}_${index}" style="width: 250px;">`;
+            }
+            else if (part.type === "radio") {
+                html += `<div>${item.q}</div><div class="radio-group">`;
+                item.options.forEach(opt => {
+                    html += `<label><input type="radio" name="q_${currentPartIndex}_${index}" value="${opt}"> ${opt}</label>`;
+                });
+                html += `</div>`;
+            }
+            html += `</div>`;
+        });
+
+        container.innerHTML = html;
+
+        // Button visibility logic
+        if (currentPartIndex === quizData.length - 1) {
+            document.getElementById('next-btn').classList.add('hidden');
+            document.getElementById('show-answers-btn').classList.remove('hidden');
+        }
+    }
+
+    function saveAnswers() {
+        const part = quizData[currentPartIndex];
+        let partAnswers = [];
+
+        part.questions.forEach((item, index) => {
+            let val = "";
+            if (part.type === "dropdown" || part.type === "input" || part.type === "input-full") {
+                val = document.getElementById(`q_${currentPartIndex}_${index}`).value.trim();
+            } else if (part.type === "radio") {
+                const checked = document.querySelector(`input[name="q_${currentPartIndex}_${index}"]:checked`);
+                val = checked ? checked.value : "";
+            }
+            partAnswers.push(val);
+        });
+        
+        userAnswers[currentPartIndex] = partAnswers;
+    }
+
+    function nextPart() {
+        saveAnswers();
+        if (currentPartIndex < quizData.length - 1) {
+            currentPartIndex++;
+            renderPart();
+        }
+    }
+
+    // Helper to normalize strings for comparison (handles "does not" vs "doesn't", case, and punctuation)
+    function normalizeText(text) {
+        return text.toLowerCase()
+                   .replace(/doesn't/g, "does not")
+                   .replace(/don't/g, "do not")
+                   .replace(/aren't/g, "are not")
+                   .replace(/[.,?]/g, "") // remove punctuation for lenient grading
+                   .replace(/\s+/g, " ")  // normalize spaces
+                   .trim();
+    }
+
+    function showAnswers() {
+        saveAnswers(); // Save the final part
+        const container = document.getElementById('quiz-content');
+        document.getElementById('show-answers-btn').classList.add('hidden');
+        
+        let html = `<h2>Quiz Results</h2>`;
+
+        quizData.forEach((part, pIndex) => {
+            html += `<h3>${part.partTitle}</h3>`;
+            part.questions.forEach((item, qIndex) => {
+                const userAnsRaw = userAnswers[pIndex][qIndex];
+                const correctAnsRaw = item.answer;
+                
+                // Compare normalized strings to be forgiving of spaces and punctuation
+                const isCorrect = normalizeText(userAnsRaw) === normalizeText(correctAnsRaw);
+                
+                html += `<div class="result-item">
+                            <div>${item.q} ${item.after ? '... ' + item.after : ''}</div>
+                            <div>
+                                Your answer: <span class="${isCorrect ? 'correct' : 'incorrect'}">
+                                ${userAnsRaw === "" ? "<em>(Blank)</em>" : userAnsRaw}
+                                </span>
+                                ${isCorrect ? ' ✓' : ' ✗'}
+                            </div>
+                            ${!isCorrect ? `<span class="correct-answer-text">Correct answer: ${correctAnsRaw}</span>` : ''}
+                         </div>`;
+            });
+        });
+
+        container.innerHTML = html;
+    }
+
+    // Initialize the app
+    renderPart();
+</script>
+</body>
+</html>
