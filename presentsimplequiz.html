@@ -20,20 +20,23 @@
             border-radius: 10px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
             width: 100%;
-            max-width: 600px;
+            max-width: 650px;
         }
         h2 { color: #800000; margin-top: 0;}
-        h3 { color: #800000; font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 5px;}
+        h3 { color: #800000; font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 25px;}
+        .instruction { color: #800000; font-weight: 500; margin-bottom: 20px;}
         .question { margin-bottom: 15px; font-size: 1.1em;}
         select, input[type="text"] {
-            padding: 5px;
+            padding: 6px;
             font-size: 1em;
             border: 1px solid #ccc;
             border-radius: 4px;
+            font-family: inherit;
         }
-        .radio-group { margin-bottom: 10px; }
+        .radio-group { margin-bottom: 10px; margin-top: 5px;}
         .radio-group label { margin-right: 15px; cursor: pointer; }
-        .btn-container { margin-top: 25px; text-align: right; }
+        .btn-container { margin-top: 25px; display: flex; justify-content: space-between; align-items: center;}
+        
         button {
             background-color: #0056b3;
             color: white;
@@ -42,23 +45,48 @@
             font-size: 1em;
             border-radius: 5px;
             cursor: pointer;
+            transition: background-color 0.2s;
         }
         button:hover { background-color: #004494; }
-        .hidden { display: none; }
+        .hidden { display: none !important; }
         
+        /* Progress Indicator */
+        .progress-text {
+            color: #666;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
         /* Results Styling */
-        .result-item { margin-bottom: 15px; padding: 10px; border-radius: 5px; background: #f9f9f9;}
-        .correct { color: #155724; font-weight: bold; }
-        .incorrect { color: #721c24; font-weight: bold; }
-        .correct-answer-text { color: #155724; font-size: 0.9em; display: block; margin-top: 5px;}
+        .score-display {
+            background-color: #e8f4fd;
+            color: #0056b3;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            border: 2px solid #b6d4fe;
+        }
+        .result-item { margin-bottom: 15px; padding: 12px; border-radius: 6px; background: #f8f9fa; border-left: 4px solid #ddd;}
+        .result-item.correct-bg { border-left-color: #28a745; }
+        .result-item.incorrect-bg { border-left-color: #dc3545; }
+        
+        .correct { color: #28a745; font-weight: bold; }
+        .incorrect { color: #dc3545; font-weight: bold; }
+        .correct-answer-text { color: #28a745; font-size: 0.95em; display: block; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #ccc;}
     </style>
 </head>
 <body>
 
 <div class="app-container">
+    <!-- Quiz Content Container -->
     <div id="quiz-content"></div>
 
-    <div class="btn-container">
+    <!-- Navigation -->
+    <div class="btn-container" id="nav-container">
+        <span id="progress-indicator" class="progress-text"></span>
         <button id="next-btn" onclick="nextPart()">Next Part</button>
         <button id="show-answers-btn" class="hidden" onclick="showAnswers()">Show Answers</button>
     </div>
@@ -66,7 +94,6 @@
 
 <script>
     // --- Quiz Data Structure ---
-    // Note: The content has been changed as requested, but the forms remain identical to your images.
     const quizData = [
         {
             partTitle: "Form of Affirmative Sentences - Part 1",
@@ -138,7 +165,7 @@
     function renderPart() {
         const part = quizData[currentPartIndex];
         const container = document.getElementById('quiz-content');
-        let html = `<h2>${part.partTitle}</h2><p style="color:#800000;">${part.instruction}</p>`;
+        let html = `<h2>${part.partTitle}</h2><p class="instruction">${part.instruction}</p>`;
 
         part.questions.forEach((item, index) => {
             html += `<div class="question">`;
@@ -150,10 +177,10 @@
                          </select> ${item.after}`;
             } 
             else if (part.type === "input") {
-                html += `${item.q} <input type="text" id="q_${currentPartIndex}_${index}" size="10"> ${item.after}`;
+                html += `${item.q} <input type="text" id="q_${currentPartIndex}_${index}" size="12" autocomplete="off"> ${item.after}`;
             }
             else if (part.type === "input-full") {
-                html += `${item.q} <input type="text" id="q_${currentPartIndex}_${index}" style="width: 250px;">`;
+                html += `${item.q} <input type="text" id="q_${currentPartIndex}_${index}" style="width: 280px;" autocomplete="off">`;
             }
             else if (part.type === "radio") {
                 html += `<div>${item.q}</div><div class="radio-group">`;
@@ -166,6 +193,9 @@
         });
 
         container.innerHTML = html;
+
+        // Update Progress
+        document.getElementById('progress-indicator').innerText = `Part ${currentPartIndex + 1} of ${quizData.length}`;
 
         // Button visibility logic
         if (currentPartIndex === quizData.length - 1) {
@@ -206,7 +236,8 @@
                    .replace(/doesn't/g, "does not")
                    .replace(/don't/g, "do not")
                    .replace(/aren't/g, "are not")
-                   .replace(/[.,?]/g, "") // remove punctuation for lenient grading
+                   .replace(/isn't/g, "is not")
+                   .replace(/[.,?!]/g, "") // remove punctuation for lenient grading
                    .replace(/\s+/g, " ")  // normalize spaces
                    .trim();
     }
@@ -214,33 +245,64 @@
     function showAnswers() {
         saveAnswers(); // Save the final part
         const container = document.getElementById('quiz-content');
-        document.getElementById('show-answers-btn').classList.add('hidden');
+        document.getElementById('nav-container').classList.add('hidden'); // Hide bottom nav completely
         
-        let html = `<h2>Quiz Results</h2>`;
+        let totalScore = 0;
+        let totalQuestions = 0;
+        let detailsHtml = "";
 
+        // Generate the breakdown and calculate score
         quizData.forEach((part, pIndex) => {
-            html += `<h3>${part.partTitle}</h3>`;
+            detailsHtml += `<h3>${part.partTitle}</h3>`;
             part.questions.forEach((item, qIndex) => {
+                totalQuestions++;
                 const userAnsRaw = userAnswers[pIndex][qIndex];
                 const correctAnsRaw = item.answer;
                 
                 // Compare normalized strings to be forgiving of spaces and punctuation
                 const isCorrect = normalizeText(userAnsRaw) === normalizeText(correctAnsRaw);
                 
-                html += `<div class="result-item">
-                            <div>${item.q} ${item.after ? '... ' + item.after : ''}</div>
+                if (isCorrect) {
+                    totalScore++;
+                }
+                
+                const bgClass = isCorrect ? 'correct-bg' : 'incorrect-bg';
+                const statusIcon = isCorrect ? '✓' : '✗';
+                
+                detailsHtml += `<div class="result-item ${bgClass}">
+                            <div style="margin-bottom: 5px; color: #555;">${item.q} ${item.after ? '... ' + item.after : ''}</div>
                             <div>
                                 Your answer: <span class="${isCorrect ? 'correct' : 'incorrect'}">
                                 ${userAnsRaw === "" ? "<em>(Blank)</em>" : userAnsRaw}
                                 </span>
-                                ${isCorrect ? ' ✓' : ' ✗'}
+                                <span class="${isCorrect ? 'correct' : 'incorrect'}">${statusIcon}</span>
                             </div>
-                            ${!isCorrect ? `<span class="correct-answer-text">Correct answer: ${correctAnsRaw}</span>` : ''}
+                            ${!isCorrect ? `<div class="correct-answer-text">Correct answer: <strong>${correctAnsRaw}</strong></div>` : ''}
                          </div>`;
             });
         });
 
-        container.innerHTML = html;
+        // Construct Final HTML
+        const scorePercentage = Math.round((totalScore / totalQuestions) * 100);
+        let feedbackMessage = "";
+        if(scorePercentage === 100) feedbackMessage = "Perfect! Excellent job.";
+        else if(scorePercentage >= 80) feedbackMessage = "Great work!";
+        else if(scorePercentage >= 60) feedbackMessage = "Good effort, keep practicing.";
+        else feedbackMessage = "Review the rules and try again!";
+
+        let finalHtml = `<h2>Quiz Results</h2>`;
+        finalHtml += `<div class="score-display">
+                        <div>You scored ${totalScore} out of ${totalQuestions} points!</div>
+                        <div style="font-size: 0.6em; font-weight: normal; margin-top: 5px;">${feedbackMessage} (${scorePercentage}%)</div>
+                      </div>`;
+        finalHtml += detailsHtml;
+        
+        // Add a "Retake Quiz" button at the very bottom
+        finalHtml += `<div style="text-align: center; margin-top: 30px;">
+                        <button onclick="location.reload()">Retake Quiz</button>
+                      </div>`;
+
+        container.innerHTML = finalHtml;
     }
 
     // Initialize the app
