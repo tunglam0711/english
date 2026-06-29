@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prepare 3 - Review (Units 5-8)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .card { transition: all 0.3s ease; }
+        .result-correct { color: #16a34a; }
+        .result-incorrect { color: #dc2626; }
+        .input-correct { border-color: #16a34a !important; box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.2); }
+        .input-incorrect { border-color: #dc2626 !important; box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2); }
+        .screen { animation: fadeIn 0.4s ease-in-out; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .quiz-option.selected { background-color: #38bdf8; color: white; border-color: #0ea5e9; }
+        .quiz-option.correct { background-color: #22c55e; color: white; border-color: #16a34a; }
+        .quiz-option.incorrect { background-color: #ef4444; color: white; border-color: #dc2626; }
+        
+        /* Drag and Drop Specific Styles */
+        .drop-target { transition: all 0.2s ease; }
+        .draggable-item { transition: transform 0.1s ease, box-shadow 0.1s ease; user-select: none; }
+        .draggable-item:active { transform: scale(0.95); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div id="main-container" class="container mx-auto p-4 md:p-8 max-w-5xl">
+        <!-- Screen 1: Home Screen -->
+        <div id="home-screen" class="screen">
+            <header class="text-center mb-8">
+                <h1 class="text-3xl md:text-4xl font-bold text-slate-900">Prepare 3 - Review</h1>
+                <p class="text-slate-600 mt-2">Select a unit to begin (Units 5-8).</p>
+            </header>
+            <nav id="unit-selection" class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
+                <button onclick="displayUnit(5)" class="unit-btn bg-white hover:bg-sky-100 text-sky-700 font-semibold py-6 px-4 border border-sky-200 rounded-lg shadow-sm transition-all duration-200 text-lg">Unit 5</button>
+                <button onclick="displayUnit(6)" class="unit-btn bg-white hover:bg-teal-100 text-teal-700 font-semibold py-6 px-4 border border-teal-200 rounded-lg shadow-sm transition-all duration-200 text-lg">Unit 6</button>
+                <button onclick="displayUnit(7)" class="unit-btn bg-white hover:bg-amber-100 text-amber-700 font-semibold py-6 px-4 border border-amber-200 rounded-lg shadow-sm transition-all duration-200 text-lg">Unit 7</button>
+                <button onclick="displayUnit(8)" class="unit-btn bg-white hover:bg-indigo-100 text-indigo-700 font-semibold py-6 px-4 border border-indigo-200 rounded-lg shadow-sm transition-all duration-200 text-lg">Unit 8</button>
+            </nav>
+        </div>
+
+        <!-- Screen 2: Unit Main Menu (Vocab/Grammar) -->
+        <div id="unit-screen" class="screen hidden"></div>
+
+        <!-- Screen 3: Content Screen (Categories or Activity) -->
+        <div id="content-screen" class="screen hidden"></div>
+    </div>
+
+    <script>
+        const vocabData = {
+            5: {
+                "School Subjects": [
+                    { word: "biology", hint: "The study of living things like plants and animals." },
+                    { word: "chemistry", hint: "The scientific study of substances and how they react." },
+                    { word: "design and technology", hint: "A school subject where you learn to design and make things." },
+                    { word: "drama", hint: "A subject where you act in plays and perform." },
+                    { word: "foreign languages", hint: "Subjects where you learn how to speak with people from other countries." },
+                    { word: "geography", hint: "The study of the earth, countries, and features like mountains and rivers." },
+                    { word: "history", hint: "The study of past events and people from long ago." },
+                    { word: "ICT", hint: "Information and Communication Technology (learning about computers)." },
+                    { word: "maths", hint: "The study of numbers, equations, shapes, and space." },
+                    { word: "PE", hint: "Physical Education (sports and exercise at school)." },
+                    { word: "physics", hint: "The study of matter, energy, and physical forces." },
+                    { word: "science", hint: "The general study of the natural world, including biology, chemistry, and physics." }
+                ],
+                "Meanings of TAKE": [
+                    { word: "carry", hint: "Meaning of take in: 'I always take an umbrella with me.'" },
+                    { word: "catch", hint: "Meaning of take in: 'Let's take a train to the city.'" },
+                    { word: "do", hint: "Meaning of take in: 'I have to take my exams next week.'" },
+                    { word: "go along", hint: "Meaning of take in: 'Take the second turning on the left.'" },
+                    { word: "make", hint: "Meaning of take in: 'Can you take a photo of us?'" },
+                    { word: "study", hint: "Meaning of take in: 'I want to take maths at university.'" },
+                    { word: "use", hint: "Meaning of take in: 'You should take this medicine twice a day.'" }
+                ]
+            },
+            6: {
+                "Materials": [
+                    { word: "cotton", hint: "A soft white material from a plant, used for making clothes." },
+                    { word: "glass", hint: "A hard, clear material used for making windows and bottles." },
+                    { word: "gold", hint: "A valuable yellow metal used to make jewelry." },
+                    { word: "leather", hint: "A strong material made from animal skin, used for shoes and bags." },
+                    { word: "metal", hint: "A hard, strong material like iron or steel." },
+                    { word: "paper", hint: "Thin material you write on or wrap things in." },
+                    { word: "plastic", hint: "A synthetic material that can be molded into many shapes." },
+                    { word: "silver", hint: "A shiny, grey-white metal used for jewelry and coins." },
+                    { word: "wood", hint: "The hard material that trees are made of." },
+                    { word: "wool", hint: "Soft, thick hair from a sheep, used to make warm clothes." }
+                ],
+                "Adjectives for Describing Objects": [
+                    { word: "colourful", hint: "Having many bright colours." },
+                    { word: "hard", hint: "Solid and firm to the touch; not soft." },
+                    { word: "heavy", hint: "Weighing a lot; difficult to lift." },
+                    { word: "large", hint: "Big in size or amount." },
+                    { word: "little", hint: "Small in size." },
+                    { word: "lovely", hint: "Very beautiful or attractive." },
+                    { word: "old", hint: "Having lived or existed for a long time." },
+                    { word: "pretty", hint: "Attractive in a delicate way." },
+                    { word: "round", hint: "Shaped like a circle or a ball." },
+                    { word: "small", hint: "Not large in size." },
+                    { word: "smooth", hint: "Having an even surface with no rough parts." },
+                    { word: "soft", hint: "Easy to press or shape; not hard." },
+                    { word: "wooden", hint: "Made of wood." }
+                ]
+            },
+            7: {
+                "Sports": [
+                    { word: "athletics", hint: "Sports such as running, jumping, and throwing." },
+                    { word: "gymnastics", hint: "Exercises developing physical agility and coordination." }
+                ]
+            },
+            8: {
+                "Entertainment": [
+                    { word: "comedy", hint: "A funny film or play." },
+                    { word: "thriller", hint: "An exciting film or book, often about a crime." }
+                ]
+            }
+        };
+
+        const grammarData = {
+            5: {
+                theory: `
+                    <div class="space-y-6">
+                        <div>
+                            <h3 class="text-xl font-bold text-slate-800 mb-2">Adjectives and Adverbs</h3>
+                            <p class="text-slate-600">We use <strong>adjectives</strong> to describe a noun and <strong>adverbs</strong> to describe a verb.</p>
+                            <p class="text-slate-600 mt-1">We form most adverbs by adding <strong>-ly</strong> to the adjective (e.g., bad &rarr; badly, careful &rarr; carefully, easy &rarr; easily). Some adverbs do not end in -ly (e.g., good &rarr; well, fast &rarr; fast, hard &rarr; hard, late &rarr; late).</p>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-slate-800 mb-2">Comparative and Superlative Adverbs</h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse text-sm mb-4">
+                                    <tr class="bg-slate-100"><th class="p-2 border border-slate-200">Adjective</th><th class="p-2 border border-slate-200">Adverb</th><th class="p-2 border border-slate-200">Comparative</th><th class="p-2 border border-slate-200">Superlative</th></tr>
+                                    <tr><td colspan="4" class="p-2 font-bold bg-slate-50 border border-slate-200 text-center">Regular</td></tr>
+                                    <tr><td class="p-2 border border-slate-200">slow</td><td class="p-2 border border-slate-200">slowly</td><td class="p-2 border border-slate-200">more slowly</td><td class="p-2 border border-slate-200">the most slowly</td></tr>
+                                    <tr><td class="p-2 border border-slate-200">easy</td><td class="p-2 border border-slate-200">easily</td><td class="p-2 border border-slate-200">more easily</td><td class="p-2 border border-slate-200">the most easily</td></tr>
+                                    <tr><td class="p-2 border border-slate-200">simple</td><td class="p-2 border border-slate-200">simply</td><td class="p-2 border border-slate-200">more simply</td><td class="p-2 border border-slate-200">the most simply</td></tr>
+                                    <tr><td class="p-2 border border-slate-200">beautiful</td><td class="p-2 border border-slate-200">beautifully</td><td class="p-2 border border-slate-200">more beautifully</td><td class="p-2 border border-slate-200">the most beautifully</td></tr>
+                                    <tr><td colspan="4" class="p-2 font-bold bg-slate-50 border border-slate-200 text-center">Irregular</td></tr>
+                                    <tr><td class="p-2 border border-slate-200">good</td><td class="p-2 border border-slate-200">well</td><td class="p-2 border border-slate-200">better</td><td class="p-2 border border-slate-200">the best</td></tr>
+                                    <tr><td class="p-2 border border-slate-200">fast</td><td class="p-2 border border-slate-200">fast</td><td class="p-2 border border-slate-200">faster</td><td class="p-2 border border-slate-200">the fastest</td></tr>
+                                    <tr><td class="p-2 border border-slate-200">hard</td><td class="p-2 border border-slate-200">hard</td><td class="p-2 border border-slate-200">harder</td><td class="p-2 border border-slate-200">the hardest</td></tr>
+                                    <tr><td class="p-2 border border-slate-200">late</td><td class="p-2 border border-slate-200">late</td><td class="p-2 border border-slate-200">later</td><td class="p-2 border border-slate-200">the latest</td></tr>
+                                </table>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-slate-800 mb-2">Rules</h3>
+                            <ul class="list-disc list-inside space-y-2 text-slate-700">
+                                <li>Use <strong>comparative adverbs</strong> to compare two things. (<em>My brother talks <strong>more quickly</strong> than me.</em>)</li>
+                                <li>The opposite of <em>more</em> is <strong>less</strong>. (<em>Nick did the exam <strong>less carefully</strong> than Jack.</em>)</li>
+                                <li>Use <strong>superlative adverbs</strong> to compare one thing with two or more other things. (<em>My dad walks <strong>the most slowly</strong> in our family.</em>)</li>
+                                <li>The opposite of <em>most</em> is <strong>least</strong>. (<em>Kevin did his exam <strong>the least carefully</strong>.</em>)</li>
+                                <li>We can use <strong>(not) as + adverb + as</strong> to compare things. (<em>Oliver talks <strong>as loudly as</strong> Phil.</em>)</li>
+                            </ul>
+                        </div>
+                    </div>
+                `,
+                activity: [
+                    { q: "Natalie ran ___, so she won the race.", o: ["fastest", "the fastest"], a: 1 },
+                    { q: "Laura won the competition because she danced ___.", o: ["more beautifully", "beautifully"], a: 0 },
+                    { q: "My sister plays the guitar ___ than me.", o: ["better", "more well"], a: 0 },
+                    { q: "Matt's mum helped him, so he finished the homework ___ than us.", o: ["easier", "more easily"], a: 1 },
+                    { q: "I arrived home late, but my brother arrived home ___.", o: ["later", "more late"], a: 0 },
+                    { q: "I did much ___ in my exam than Theo. I'm so disappointed.", o: ["worse", "more badly"], a: 0 },
+                    { q: "My best friend speaks more quietly than me. I don't speak ___ my best friend.", o: ["as quietly as", "more quietly than"], a: 0 },
+                    { q: "Of all our teachers, our maths teacher speaks ___.", o: ["more quickly", "the most quickly"], a: 1 },
+                    { q: "We all finished the exam quickly. I finished the exam ___ my friends.", o: ["as quickly as", "more quickly than"], a: 0 },
+                    { q: "None of the teams played very well, but our team played ___.", o: ["the worst", "the least well"], a: 0 }
+                ]
+            },
+            6: {
+                theory: `
+                    <div class="space-y-6">
+                        <div>
+                            <h3 class="text-xl font-bold text-slate-800 mb-2">Possession: 's (apostrophe + s)</h3>
+                            <ul class="list-disc list-inside space-y-2 text-slate-700">
+                                <li>We use <strong>'s</strong> for people and animals to show possession.<br><em>That's my brother's hat.</em> (not <span class="line-through">the hat of my brother</span>)</li>
+                                <li>With singular nouns, we use <strong>'s</strong>.<br><em>my mum's necklace, my teacher's ring</em></li>
+                                <li>With plural nouns ending in -s, we put the apostrophe (<strong>'</strong>) at the end.<br><em>my friends' shoes, my cousins' jackets</em></li>
+                                <li>If the plural noun does not end in -s (e.g. children, men), we use <strong>'s</strong>.<br><em>The children's bedroom is over there.</em></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-slate-800 mb-2">Determiners and Pronouns</h3>
+                            <div class="overflow-x-auto mb-4">
+                                <table class="w-full text-left border-collapse text-sm">
+                                    <tr class="bg-slate-100"><th class="p-2 border border-slate-200">Determiners</th><th class="p-2 border border-slate-200">Pronouns</th></tr>
+                                    <tr><td class="p-2 border border-slate-200">my</td><td class="p-2 border border-slate-200">mine</td></tr>
+                                    <tr><td class="p-2 border border-slate-200">your</td><td class="p-2 border border-slate-200">yours</td></tr>
+                                    <tr><td class="p-2 border border-slate-200">his</td><td class="p-2 border border-slate-200">his</td></tr>
+                                    <tr><td class="p-2 border border-slate-200">her</td><td class="p-2 border border-slate-200">hers</td></tr>
+                                    <tr><td class="p-2 border border-slate-200">our</td><td class="p-2 border border-slate-200">ours</td></tr>
+                                    <tr><td class="p-2 border border-slate-200">their</td><td class="p-2 border border-slate-200">theirs</td></tr>
+                                </table>
+                            </div>
+                            <ul class="list-disc list-inside space-y-2 text-slate-700">
+                                <li>We use pronouns instead of determiner + noun.<br><em>Is that my pencil on your desk? No, <strong>yours</strong> is over there. (= your pencil)</em></li>
+                                <li>We can use 'a friend of mine/yours/his, etc.' instead of 'one of my/your/his, etc. friends'.<br><em>This ball belongs to <strong>a friend of mine</strong>.</em> (not <span class="line-through">a friend of me</span>)</li>
+                            </ul>
+                        </div>
+                    </div>
+                `,
+                activity: [
+                    { q: "The ___ bowl is empty. (The bowl belongs to the dog)", o: ["dog's", "dogs'"], a: 0 },
+                    { q: "Both ___ lunches are in the kitchen. (The lunches belong to the boys)", o: ["boy's", "boys'"], a: 1 },
+                    { q: "The ___ shoes are near the door. (The shoes belong to the children)", o: ["childrens'", "children's"], a: 1 },
+                    { q: "I can't find my ___ necklace. (The necklace belongs to my sister)", o: ["sisters'", "sister's"], a: 1 },
+                    { q: "My ___ names are Ana and Eva. (The names belong to my cousins)", o: ["cousins'", "cousin's"], a: 0 },
+                    { q: "That isn't Ben's book. ___ is on the teacher's desk.", o: ["His", "Him"], a: 0 },
+                    { q: "Nora saw Sue at the cinema. She's a friend of ___.", o: ["she", "hers"], a: 1 },
+                    { q: "We don't live here. ___ house is near the park.", o: ["Ours", "Our"], a: 1 },
+                    { q: "Who does this jumper belong to? Is it ___?", o: ["yours", "your"], a: 0 },
+                    { q: "I was shopping when I saw a classmate of ___.", o: ["me", "mine"], a: 1 }
+                ]
+            },
+            7: { theory: "<p>Coming soon...</p>", activity: [] },
+            8: { theory: "<p>Coming soon...</p>", activity: [] }
+        };
+
+        let soundsReady = false;
+        const clickSound = new Tone.Synth({ oscillator: { type: "sine" }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.0, release: 0.1 } }).toDestination();
+        const correctSound = new Tone.Synth({ oscillator: { type: "triangle" }, envelope: { attack: 0.005, decay: 0.2, sustain: 0.0, release: 0.2 } }).toDestination();
+        const incorrectSound = new Tone.Synth({ oscillator: { type: "square" }, envelope: { attack: 0.01, decay: 0.3, sustain: 0, release: 0.3 } }).toDestination();
+
+        async function initAudio() { if (!soundsReady) { try { await Tone.start(); soundsReady = true; } catch (e) { console.error("Audio failed", e); } } }
+        function playSound(sound, note = "C4") { if (soundsReady) sound.triggerAttackRelease(note, "8n", Tone.now()); }
+        
+        const screens = document.querySelectorAll('.screen');
+        const unitScreen = document.getElementById('unit-screen');
+        const contentScreen = document.getElementById('content-screen');
+
+        function showScreen(screenId) {
+            screens.forEach(screen => screen.classList.add('hidden'));
+            document.getElementById(screenId).classList.remove('hidden');
+        }
+
+        function goHome() { playSound(clickSound); showScreen('home-screen'); }
+
+        function displayUnit(unitNumber) {
+            initAudio();
+            playSound(clickSound);
+            unitScreen.innerHTML = `
+                <header class="text-center mb-8"><h1 class="text-3xl md:text-4xl font-bold text-slate-900">Unit ${unitNumber}</h1><p class="text-slate-600 mt-2">Select a section to review.</p></header>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-xl mx-auto">
+                    <button onclick="displayVocabCategories(${unitNumber})" class="bg-white hover:bg-slate-100 text-slate-700 font-semibold py-8 px-4 border border-slate-200 rounded-lg shadow-sm transition-all duration-200 text-xl">Vocabulary</button>
+                    <button onclick="displayGrammarMenu(${unitNumber})" class="bg-white hover:bg-slate-100 text-slate-700 font-semibold py-8 px-4 border border-slate-200 rounded-lg shadow-sm transition-all duration-200 text-xl">Grammar</button>
+                </div>
+                <div class="text-center mt-8"><button onclick="goHome()" class="bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-6 rounded-lg transition">&larr; Back to Home</button></div>`;
+            showScreen('unit-screen');
+        }
+
+        function displayVocabCategories(unitNumber) {
+            playSound(clickSound);
+            const categories = Object.keys(vocabData[unitNumber] || {});
+            contentScreen.innerHTML = `
+                <header class="text-center mb-8"><h1 class="text-2xl md:text-3xl font-bold text-slate-900">Unit ${unitNumber} Vocabulary</h1><p class="text-slate-600 mt-2">Select a category.</p></header>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                    ${categories.map(category => `<button onclick="displayVocabActivity(${unitNumber}, '${category}')" class="bg-white hover:bg-slate-100 text-slate-700 font-semibold py-6 px-4 border border-slate-200 rounded-lg shadow-sm transition-all duration-200 text-lg">${category}</button>`).join('')}
+                </div>
+                <div class="text-center mt-8"><button onclick="displayUnit(${unitNumber})" class="bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-6 rounded-lg transition">&larr; Back to Unit ${unitNumber} Menu</button></div>`;
+            showScreen('content-screen');
+        }
+        
+        function displayGrammarMenu(unitNumber) {
+            playSound(clickSound);
+            contentScreen.innerHTML = `
+                <header class="text-center mb-8"><h1 class="text-2xl md:text-3xl font-bold text-slate-900">Unit ${unitNumber} Grammar</h1><p class="text-slate-600 mt-2">Select a section.</p></header>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-xl mx-auto">
+                    <button onclick="displayGrammarTheory(${unitNumber})" class="bg-white hover:bg-slate-100 text-slate-700 font-semibold py-8 px-4 border border-slate-200 rounded-lg shadow-sm transition-all duration-200 text-xl">Theory</button>
+                    <button onclick="displayGrammarActivity(${unitNumber})" class="bg-white hover:bg-slate-100 text-slate-700 font-semibold py-8 px-4 border border-slate-200 rounded-lg shadow-sm transition-all duration-200 text-xl">Activity</button>
+                </div>
+                <div class="text-center mt-8"><button onclick="displayUnit(${unitNumber})" class="bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-6 rounded-lg transition">&larr; Back to Unit ${unitNumber} Menu</button></div>`;
+            showScreen('content-screen');
+        }
+
+        function displayVocabActivity(unitNumber, categoryName) {
+            playSound(clickSound);
+            const words = vocabData[unitNumber][categoryName];
+            
+            // Special branching for Drag and Drop exercise
+            if (unitNumber === 6 && categoryName === "Adjectives for Describing Objects") {
+                displayDragAndDropActivity(unitNumber, categoryName, words);
+                return;
+            }
+
+            contentScreen.innerHTML = `
+                <header class="text-center mb-8"><h1 class="text-2xl md:text-3xl font-bold text-slate-900">${categoryName}</h1><p class="text-slate-600 mt-2">Guess the word based on the hint.</p></header>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    ${words.map((item, index) => {
+                        const uniqueId = `u${unitNumber}-c${categoryName.replace(/\s/g, '')}-${index}`;
+                        return `<div class="card bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                                    <div class="mb-3 min-h-[40px]"><p class="text-slate-600">${item.hint} <span class="font-bold text-slate-800">${item.word.charAt(0)}...</span></p></div>
+                                    <div class="flex gap-2">
+                                        <input type="text" id="input-${uniqueId}" data-answer="${item.word.toLowerCase()}" class="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition" placeholder="Type your guess...">
+                                        <button onclick="checkVocabAnswer('${uniqueId}')" class="flex-shrink-0 bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-4 rounded-md transition">Check</button>
+                                    </div>
+                                    <p id="result-${uniqueId}" class="result-text text-sm font-medium mt-2 h-5"></p>
+                                </div>`;
+                    }).join('')}
+                </div>
+                <div class="text-center mt-8"><button onclick="displayVocabCategories(${unitNumber})" class="bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-6 rounded-lg transition">&larr; Back to Vocabulary Categories</button></div>`;
+            showScreen('content-screen');
+            contentScreen.querySelectorAll('input[type="text"]').forEach(input => {
+                input.addEventListener('keypress', e => e.key === 'Enter' && checkVocabAnswer(input.id.replace('input-', '')));
+                input.addEventListener('input', () => {
+                    const uniqueId = input.id.replace('input-', '');
+                    document.getElementById(`result-${uniqueId}`).textContent = '';
+                    input.classList.remove('input-correct', 'input-incorrect');
+                });
+            });
+        }
+
+        function displayDragAndDropActivity(unitNumber, categoryName, words) {
+            // Randomize array for word bank
+            const shuffleArray = (array) => {
+                let shuffled = [...array];
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
+                return shuffled;
+            };
+            const shuffledWords = shuffleArray(words);
+
+            contentScreen.innerHTML = `
+                <header class="text-center mb-6">
+                    <h1 class="text-2xl md:text-3xl font-bold text-slate-900">${categoryName}</h1>
+                    <p class="text-slate-600 mt-2">Drag the correct adjective to match its meaning.</p>
+                </header>
+                
+                <div class="flex flex-col md:flex-row gap-6 max-w-5xl mx-auto">
+                    <!-- Word Bank -->
+                    <div class="w-full md:w-1/3 bg-slate-200 p-4 rounded-xl border border-slate-300 min-h-[250px]" id="word-bank">
+                        <h3 class="font-bold text-slate-700 mb-4 text-center pb-2 border-b border-slate-300">Word Bank</h3>
+                        <div class="flex flex-wrap gap-2 justify-center pb-8" ondrop="dropToBank(event)" ondragover="allowDrop(event)">
+                            ${shuffledWords.map((item, index) => `
+                                <div class="draggable-item bg-white px-4 py-2 rounded-lg shadow-sm border border-slate-300 cursor-grab active:cursor-grabbing font-medium text-sky-700 hover:bg-sky-50" draggable="true" ondragstart="drag(event)" id="drag-${index}" data-word="${item.word}">
+                                    ${item.word}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Drop Zones (Hints) -->
+                    <div class="w-full md:w-2/3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        ${words.map((item, index) => {
+                            return `
+                                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                                    <p class="text-slate-700 font-medium mb-3 text-sm flex-grow">${item.hint}</p>
+                                    <div class="drop-target min-h-[48px] bg-slate-50 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center" ondrop="dropToTarget(event, this, '${item.word}')" ondragover="allowDrop(event)">
+                                        <span class="text-slate-400 text-sm placeholder-text">Drop word here</span>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+                
+                <!-- Feedback Area -->
+                <div id="dnd-feedback" class="text-center mt-6 text-xl font-bold h-8 transition-all"></div>
+
+                <div class="text-center mt-6"><button onclick="displayVocabCategories(${unitNumber})" class="bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-6 rounded-lg transition">&larr; Back to Categories</button></div>
+            `;
+            showScreen('content-screen');
+        }
+
+        // Global Drag variables
+        let draggedElement = null;
+
+        function allowDrop(ev) {
+            ev.preventDefault();
+            // Highlight target
+            if (ev.target.classList.contains('drop-target') && ev.target.children.length <= 1) {
+                ev.target.classList.add('border-sky-400', 'bg-sky-100');
+            }
+        }
+
+        function drag(ev) {
+            draggedElement = ev.target;
+            ev.dataTransfer.setData("text", ev.target.id);
+            setTimeout(() => ev.target.classList.add('opacity-40'), 0);
+        }
+
+        // Clean up highlighting on drag leave
+        document.addEventListener('dragleave', (ev) => {
+            if (ev.target.classList && ev.target.classList.contains('drop-target')) {
+                 ev.target.classList.remove('border-sky-400', 'bg-sky-100');
+            }
+        });
+
+        document.addEventListener('dragend', (ev) => {
+            if(draggedElement) {
+                draggedElement.classList.remove('opacity-40');
+                draggedElement = null;
+            }
+            document.querySelectorAll('.drop-target').forEach(el => el.classList.remove('border-sky-400', 'bg-sky-100'));
+        });
+
+        function dropToBank(ev) {
+             ev.preventDefault();
+             // Prevent returning to bank if we want to enforce it, but let's allow it in case of mistakes
+             if (ev.target.closest('#word-bank') && draggedElement) {
+                // If it came from a dropzone, restore placeholder
+                const oldParent = draggedElement.parentElement;
+                if(oldParent.classList.contains('drop-target')) {
+                    const ph = oldParent.querySelector('.placeholder-text');
+                    if(ph) ph.style.display = 'block';
+                    oldParent.classList.remove('border-green-500', 'bg-green-50', 'border-red-500', 'bg-red-50', 'border-solid');
+                    oldParent.classList.add('border-dashed', 'border-slate-300');
+                }
+                document.querySelector('#word-bank > div').appendChild(draggedElement);
+             }
+        }
+
+        function dropToTarget(ev, targetElement, correctWord) {
+            ev.preventDefault();
+            targetElement.classList.remove('border-sky-400', 'bg-sky-100');
+            
+            const data = ev.dataTransfer.getData("text");
+            const dragged = document.getElementById(data);
+            
+            if (!dragged) return;
+            // Prevent multiple items in one slot (excluding the placeholder span)
+            const draggablesInTarget = targetElement.querySelectorAll('.draggable-item');
+            if (draggablesInTarget.length > 0) return;
+
+            const draggedWord = dragged.getAttribute('data-word');
+            const feedbackEl = document.getElementById('dnd-feedback');
+
+            // Hide placeholder
+            const placeholder = targetElement.querySelector('.placeholder-text');
+            if (placeholder) placeholder.style.display = 'none';
+
+            // Append item
+            targetElement.appendChild(dragged);
+
+            // Validation
+            if (draggedWord === correctWord) {
+                playSound(correctSound, "C5");
+                targetElement.classList.remove('border-slate-300', 'border-dashed', 'border-red-500', 'bg-red-50');
+                targetElement.classList.add('border-green-500', 'border-solid', 'bg-green-50');
+                
+                dragged.setAttribute('draggable', 'false');
+                dragged.classList.remove('cursor-grab', 'hover:bg-sky-50', 'text-sky-700');
+                dragged.classList.add('cursor-default', 'bg-green-500', 'text-white', 'border-green-600');
+                
+                feedbackEl.textContent = 'Correct Match!';
+                feedbackEl.className = 'text-center mt-6 text-xl font-bold h-8 text-green-600';
+            } else {
+                playSound(incorrectSound, "C3");
+                targetElement.classList.remove('border-slate-300');
+                targetElement.classList.add('border-red-500', 'bg-red-50', 'border-solid');
+                
+                feedbackEl.textContent = 'Incorrect, try again!';
+                feedbackEl.className = 'text-center mt-6 text-xl font-bold h-8 text-red-600';
+                
+                // Snap back to bank
+                setTimeout(() => {
+                    document.querySelector('#word-bank > div').appendChild(dragged);
+                    if (placeholder) placeholder.style.display = 'block';
+                    targetElement.classList.remove('border-red-500', 'bg-red-50', 'border-solid');
+                    targetElement.classList.add('border-slate-300', 'border-dashed');
+                    feedbackEl.textContent = '';
+                }, 1000);
+            }
+        }
+
+        function displayGrammarTheory(unitNumber) {
+            playSound(clickSound);
+            const theory = grammarData[unitNumber].theory;
+            contentScreen.innerHTML = `
+                <header class="text-center mb-8"><h1 class="text-2xl md:text-3xl font-bold text-slate-900">Unit ${unitNumber} Grammar Theory</h1></header>
+                <div class="bg-white p-6 rounded-lg shadow-sm border max-w-4xl mx-auto">${theory}</div>
+                <div class="text-center mt-8"><button onclick="displayGrammarMenu(${unitNumber})" class="bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-6 rounded-lg transition">&larr; Back to Grammar Menu</button></div>`;
+            showScreen('content-screen');
+        }
+        
+        function displayGrammarActivity(unitNumber) {
+            playSound(clickSound);
+            const activity = grammarData[unitNumber].activity;
+            if(!activity || activity.length === 0) {
+                 contentScreen.innerHTML = `<div class="text-center p-8"><h2 class="text-2xl font-bold text-slate-700">Coming Soon!</h2><div class="mt-8"><button onclick="displayGrammarMenu(${unitNumber})" class="bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-6 rounded-lg transition">&larr; Back</button></div></div>`;
+                 showScreen('content-screen');
+                 return;
+            }
+
+            contentScreen.innerHTML = `
+                <header class="text-center mb-8"><h1 class="text-2xl md:text-3xl font-bold text-slate-900">Unit ${unitNumber} Grammar Activity</h1><p class="text-slate-600 mt-2">Choose the correct option for each question.</p></header>
+                <div id="quiz-container" class="space-y-4 max-w-3xl mx-auto">
+                    ${activity.map((item, index) => `
+                        <div id="q-container-${index}" class="bg-white p-4 rounded-lg shadow-sm border">
+                            <p class="font-semibold text-slate-800 mb-3">${index + 1}. ${item.q}</p>
+                            <div class="flex flex-col sm:flex-row gap-2" data-answer="${item.a}">
+                                ${item.o.map((opt, optIndex) => `<button onclick="selectAnswer(this, ${index})" class="quiz-option w-full text-left p-2 border border-slate-300 rounded-md hover:bg-sky-100 transition">${opt}</button>`).join('')}
+                            </div>
+                            <p id="res-${index}" class="text-sm font-bold mt-2"></p>
+                        </div>
+                    `).join('')}
+                </div>
+                <div id="quiz-footer" class="text-center mt-8 pb-12">
+                    <button onclick="checkGrammarAnswers(${unitNumber})" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition transform hover:scale-105 text-lg">Check My Answers</button>
+                    <div class="mt-6"><button onclick="displayGrammarMenu(${unitNumber})" class="text-sky-600 hover:text-sky-800 font-semibold transition">&larr; Back to Grammar Menu</button></div>
+                </div>`;
+            showScreen('content-screen');
+        }
+        
+        function selectAnswer(btn, qIndex) {
+            const parent = btn.parentElement;
+            parent.querySelectorAll('.quiz-option').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+        }
+
+        function checkGrammarAnswers(unitNumber) {
+            playSound(clickSound, "C5");
+            const activity = grammarData[unitNumber].activity;
+            let score = 0;
+            activity.forEach((item, index) => {
+                const container = document.getElementById(`q-container-${index}`);
+                const options = container.querySelectorAll('.quiz-option');
+                const resultEl = document.getElementById(`res-${index}`);
+                const selectedBtn = container.querySelector('.quiz-option.selected');
+                
+                options.forEach(b => b.disabled = true);
+
+                if (selectedBtn) {
+                    const selectedAnswer = Array.from(options).indexOf(selectedBtn);
+                    if (selectedAnswer === item.a) {
+                        score++;
+                        selectedBtn.classList.add('correct', 'font-bold');
+                        resultEl.textContent = 'Correct!';
+                        resultEl.className = 'text-sm font-bold mt-2 result-correct';
+                    } else {
+                        selectedBtn.classList.add('incorrect');
+                        options[item.a].classList.add('correct', 'font-bold');
+                        resultEl.textContent = 'Incorrect.';
+                        resultEl.className = 'text-sm font-bold mt-2 result-incorrect';
+                    }
+                } else {
+                    options[item.a].classList.add('correct', 'font-bold');
+                    resultEl.textContent = 'The correct answer is highlighted.';
+                    resultEl.className = 'text-sm font-bold mt-2 text-amber-600';
+                }
+            });
+            
+            const footer = document.getElementById('quiz-footer');
+            footer.innerHTML = `
+                <div class="bg-white p-6 rounded-xl shadow-md border-2 ${score === activity.length ? 'border-green-400' : 'border-sky-300'} inline-block">
+                    <h3 class="text-2xl font-bold text-slate-800">Your score: <span class="${score === activity.length ? 'text-green-600' : 'text-sky-600'}">${score} / ${activity.length}</span></h3>
+                    ${score === activity.length ? '<p class="text-green-600 font-medium mt-2">Perfect! Great job!</p>' : ''}
+                </div>
+                <div class="mt-8"><button onclick="displayGrammarMenu(${unitNumber})" class="bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-6 rounded-lg transition">&larr; Back to Grammar Menu</button></div>
+            `;
+        }
+
+        function checkVocabAnswer(uniqueId) {
+            const inputEl = document.getElementById(`input-${uniqueId}`);
+            const resultEl = document.getElementById(`result-${uniqueId}`);
+            const userAnswer = inputEl.value.trim().toLowerCase();
+            const correctAnswer = inputEl.dataset.answer;
+            if (!userAnswer) { 
+                resultEl.textContent = 'Please enter an answer.'; 
+                resultEl.className = 'result-text text-sm font-medium mt-2 h-5 text-amber-600'; 
+                return; 
+            }
+            if (userAnswer === correctAnswer) {
+                playSound(correctSound, "C5");
+                resultEl.textContent = 'Correct! 🎉';
+                resultEl.className = 'result-text text-sm font-medium mt-2 h-5 result-correct';
+                inputEl.classList.add('input-correct');
+            } else {
+                playSound(incorrectSound, "C3");
+                resultEl.innerHTML = `Not quite. The answer is <strong class="font-bold">${correctAnswer}</strong>.`;
+                resultEl.className = 'result-text text-sm font-medium mt-2 h-5 result-incorrect';
+                inputEl.classList.add('input-incorrect');
+            }
+        }
+    </script>
+</body>
+</html>
