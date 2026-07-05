@@ -65,6 +65,11 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: #94a3b8; 
         }
+        
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -185,18 +190,18 @@
             },
             8: {
                 "Furniture and Household Appliances": [
-                    { word: "air conditioning", hint: "A system that cools the air inside a building." },
-                    { word: "barbecue", hint: "Equipment used for cooking food outdoors over an open fire." },
-                    { word: "bin", hint: "A container for putting rubbish in." },
-                    { word: "bookcase", hint: "A piece of furniture with shelves for holding books." },
-                    { word: "drawer", hint: "A box-shaped container in a piece of furniture that slides in and out." },
-                    { word: "fridge", hint: "A large appliance used for keeping food and drinks cold." },
-                    { word: "heating", hint: "The system that keeps a building warm." },
-                    { word: "lights", hint: "Equipment that produces illumination in a room." },
-                    { word: "roof", hint: "The covering that forms the top of a building." },
-                    { word: "seat", hint: "Something designed for someone to sit on, like a chair." },
-                    { word: "stairs", hint: "A set of steps that lead from one level of a building to another." },
-                    { word: "washing machine", hint: "An appliance used for washing clothes." }
+                    { word: "air conditioning", ipa: "/eə kənˈdɪʃənɪŋ/", hint: "A system that cools the air inside a building." },
+                    { word: "barbecue", ipa: "/ˈbɑːbɪkjuː/", hint: "Equipment used for cooking food outdoors over an open fire." },
+                    { word: "bin", ipa: "/bɪn/", hint: "A container for putting rubbish in." },
+                    { word: "bookcase", ipa: "/ˈbʊkkeɪs/", hint: "A piece of furniture with shelves for holding books." },
+                    { word: "drawer", ipa: "/drɔː/", hint: "A box-shaped container in a piece of furniture that slides in and out." },
+                    { word: "fridge", ipa: "/frɪdʒ/", hint: "A large appliance used for keeping food and drinks cold." },
+                    { word: "heating", ipa: "/ˈhiːtɪŋ/", hint: "The system that keeps a building warm." },
+                    { word: "lights", ipa: "/laɪts/", hint: "Equipment that produces illumination in a room." },
+                    { word: "roof", ipa: "/ruːf/", hint: "The covering that forms the top of a building." },
+                    { word: "seat", ipa: "/siːt/", hint: "Something designed for someone to sit on, like a chair." },
+                    { word: "stairs", ipa: "/steəz/", hint: "A set of steps that lead from one level of a building to another." },
+                    { word: "washing machine", ipa: "/ˈwɒʃɪŋ məˈʃiːn/", hint: "An appliance used for washing clothes." }
                 ],
                 "Words with Two Meanings": [
                     { word: "book", hint: "Meaning in: 'I want to read a good ___ tonight.'" },
@@ -512,6 +517,68 @@
             playSound(clickSound);
             const words = vocabData[unitNumber][categoryName];
             
+            if (unitNumber === 8 && categoryName === "Furniture and Household Appliances") {
+                contentScreen.innerHTML = `
+                    <header class="text-center mb-8">
+                        <h1 class="text-2xl md:text-3xl font-bold text-slate-900">${categoryName}</h1>
+                        <p class="text-slate-600 mt-2">Open the mystery box, read the IPA, type the word, and say its use aloud before flipping!</p>
+                    </header>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        ${words.map((item, index) => {
+                            const uniqueId = `u${unitNumber}-c${categoryName.replace(/\s/g, '')}-${index}`;
+                            return `
+                                <div class="w-full h-64 perspective-1000 relative">
+                                    <!-- Mystery Box Overlay -->
+                                    <div id="mystery-box-${uniqueId}" class="absolute inset-0 bg-indigo-500 text-white flex flex-col items-center justify-center rounded-xl cursor-pointer hover:bg-indigo-600 transition-all duration-300 shadow-md z-10" onclick="openMysteryBox('${uniqueId}')">
+                                        <span class="text-5xl mb-3">🎁</span>
+                                        <span class="font-bold text-lg">Open Box</span>
+                                    </div>
+
+                                    <!-- The Flip Card Container -->
+                                    <div id="flip-card-${uniqueId}" class="w-full h-full relative transition-transform duration-700 transform-style-3d opacity-0 pointer-events-none">
+                                        
+                                        <!-- FRONT: IPA and Input -->
+                                        <div class="absolute inset-0 backface-hidden bg-white border border-slate-200 rounded-xl shadow-sm p-4 flex flex-col justify-between z-10">
+                                            <div class="text-center mt-2">
+                                                <p class="text-xs text-slate-500 font-semibold tracking-wider uppercase mb-1">Pronunciation</p>
+                                                <p class="text-xl font-mono font-bold text-sky-600">${item.ipa}</p>
+                                            </div>
+                                            <div class="flex flex-col gap-2 mt-4">
+                                                <input type="text" id="input-${uniqueId}" data-answer="${item.word.toLowerCase()}" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sky-500 transition text-center" placeholder="Type word here...">
+                                                <p class="text-[10px] text-slate-400 text-center uppercase tracking-wide">Say what it's used for aloud!</p>
+                                                <button onclick="checkAndFlip('${uniqueId}')" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-4 rounded-md transition mt-1">Turn Over</button>
+                                            </div>
+                                        </div>
+
+                                        <!-- BACK: Word and Usage -->
+                                        <div class="absolute inset-0 backface-hidden rotate-y-180 bg-slate-50 border border-slate-200 rounded-xl shadow-sm p-4 flex flex-col justify-center items-center text-center">
+                                            <p id="result-msg-${uniqueId}" class="text-lg font-bold mb-2"></p>
+                                            <p class="text-2xl font-bold text-slate-800 mb-3 text-sky-700 capitalize">${item.word}</p>
+                                            <div class="bg-white p-3 rounded border border-slate-200 w-full overflow-y-auto">
+                                                <p class="text-xs text-slate-400 uppercase font-semibold mb-1">Usage / Meaning</p>
+                                                <p class="text-sm text-slate-600 italic">"${item.hint}"</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                    
+                    <div class="text-center mt-10">
+                        <button onclick="displayVocabCategories(${unitNumber})" class="bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-6 rounded-lg transition">&larr; Back to Vocabulary Categories</button>
+                    </div>
+                `;
+                showScreen('content-screen');
+                
+                // Add enter key listener for the flip cards
+                contentScreen.querySelectorAll('input[type="text"]').forEach(input => {
+                    input.addEventListener('keypress', e => e.key === 'Enter' && checkAndFlip(input.id.replace('input-', '')));
+                });
+                return;
+            }
+
             // Special layout for Drag and Drop (Unit 6: Adjectives)
             if (categoryName === "Adjectives for Describing Objects") {
                 const shuffledWords = [...words].sort(() => 0.5 - Math.random());
@@ -697,6 +764,43 @@
                 inputEl.classList.add('input-incorrect');
             }
         }
+
+        window.openMysteryBox = function(uniqueId) {
+            playSound(clickSound);
+            const box = document.getElementById(`mystery-box-${uniqueId}`);
+            box.style.opacity = '0';
+            box.style.pointerEvents = 'none';
+            
+            const flipCard = document.getElementById(`flip-card-${uniqueId}`);
+            flipCard.style.opacity = '1';
+            flipCard.style.pointerEvents = 'auto';
+        };
+
+        window.checkAndFlip = function(uniqueId) {
+            const inputEl = document.getElementById(`input-${uniqueId}`);
+            const userAnswer = inputEl.value.trim().toLowerCase();
+            const correctAnswer = inputEl.dataset.answer;
+            const resultMsg = document.getElementById(`result-msg-${uniqueId}`);
+            
+            if (!userAnswer) {
+                 inputEl.classList.add('border-red-500', 'bg-red-50');
+                 setTimeout(() => inputEl.classList.remove('border-red-500', 'bg-red-50'), 800);
+                 return;
+            }
+
+            if (userAnswer === correctAnswer) {
+                playSound(correctSound, "C5");
+                resultMsg.textContent = "Correct! 🎉";
+                resultMsg.className = "text-lg font-bold mb-2 text-green-600";
+            } else {
+                playSound(incorrectSound, "C3");
+                resultMsg.textContent = "Not quite!";
+                resultMsg.className = "text-lg font-bold mb-2 text-red-600";
+            }
+
+            // Trigger the 3D CSS flip
+            document.getElementById(`flip-card-${uniqueId}`).classList.add('rotate-y-180');
+        };
 
     </script>
 </body>
