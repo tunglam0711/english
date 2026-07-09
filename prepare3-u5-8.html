@@ -513,9 +513,21 @@
             }
         };
 
+        // --- Utility to shuffle arrays ---
+        function shuffleArray(array) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex != 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
         function displayVocabActivity(unitNumber, categoryName) {
             playSound(clickSound);
-            const words = vocabData[unitNumber][categoryName];
+            // Create a copy of the array and shuffle it
+            const words = shuffleArray([...vocabData[unitNumber][categoryName]]);
             
             if (unitNumber === 8 && categoryName === "Furniture and Household Appliances") {
                 contentScreen.innerHTML = `
@@ -581,7 +593,8 @@
 
             // Special layout for Drag and Drop (Unit 6: Adjectives)
             if (categoryName === "Adjectives for Describing Objects") {
-                const shuffledWords = [...words].sort(() => 0.5 - Math.random());
+                // Shuffle words for the word bank as well
+                const shuffledWords = shuffleArray([...words]);
                 
                 contentScreen.innerHTML = `
                     <header class="text-center mb-8">
