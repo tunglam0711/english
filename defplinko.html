@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Definition Plinko</title>
+    <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-darker: #020617;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --primary: #8b5cf6;
+            --primary-dark: #6d28d9;
+            --accent: #f43f5e;
+            --accent-dark: #e11d48;
+            --success: #10b981;
+            --warning: #f59e0b;
+            
+            --t1-color: #3b82f6;
+            --t2-color: #f43f5e;
+            --t3-color: #10b981;
+            --t4-color: #f59e0b;
+        }
+
+        * { box-sizing: border-box; user-select: none; }
+        
+        body {
+            margin: 0; padding: 0; font-family: 'Nunito', sans-serif;
+            background: radial-gradient(circle at top, var(--bg-dark), var(--bg-darker));
+            color: #1e293b; min-height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden;
+        }
+
+        .hidden { display: none !important; }
+        
+        h1.title {
+            font-family: 'Luckiest Guy', cursive; font-size: 5rem;
+            text-align: center; margin: 0 0 10px 0;
+            background: linear-gradient(to bottom, #a78bfa, #f472b6);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0px 4px 0px rgba(0,0,0,0.5)); letter-spacing: 4px;
+        }
+
+        .subtitle { text-align: center; font-weight: 800; color: #94a3b8; margin-bottom: 30px; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 2px; }
+
+        .setup-container {
+            background: var(--card-bg); padding: 40px; border-radius: 32px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5); width: 90%; max-width: 700px;
+            max-height: 90vh; overflow-y: auto; position: relative; z-index: 10;
+        }
+
+        .input-group { margin-bottom: 25px; }
+        .input-group label { display: block; font-weight: 900; margin-bottom: 10px; color: #334155; text-transform: uppercase; letter-spacing: 1px; }
+        select, textarea, input[type="text"] {
+            width: 100%; padding: 15px; border-radius: 16px; border: 3px solid #e2e8f0;
+            font-family: 'Nunito', sans-serif; font-size: 1.1rem; font-weight: 600; background: #f8fafc; transition: all 0.2s;
+        }
+        select:focus, textarea:focus, input[type="text"]:focus { outline: none; border-color: var(--primary); background: #ffffff; }
+        textarea { height: 160px; resize: vertical; }
+
+        button {
+            width: 100%; padding: 18px; border: none; border-radius: 16px;
+            font-family: 'Nunito', sans-serif; font-size: 1.4rem; font-weight: 900;
+            cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 2px; display: flex; justify-content: center; align-items: center; gap: 10px;
+        }
+        .btn-play { background: var(--primary); color: white; box-shadow: 0 8px 0 var(--primary-dark); }
+        .btn-play:hover { transform: translateY(4px); box-shadow: 0 4px 0 var(--primary-dark); }
+        .btn-play:active { transform: translateY(8px); box-shadow: 0 0 0 var(--primary-dark); }
+
+        .btn-secondary { background: #f1f5f9; color: #64748b; font-size: 1rem; padding: 12px 20px; box-shadow: 0 4px 0 #cbd5e1; width: auto; border-radius: 12px; }
+        .btn-secondary:hover { transform: translateY(2px); box-shadow: 0 2px 0 #cbd5e1; }
+        
+        .btn-action { background: var(--accent); color: white; box-shadow: 0 6px 0 var(--accent-dark); width: auto; padding: 15px 40px; }
+        .btn-action:hover { transform: translateY(3px); box-shadow: 0 3px 0 var(--accent-dark); }
+        
+        .btn-success { background: var(--success); color: white; box-shadow: 0 6px 0 #047857; width: auto; padding: 15px 40px; }
+        .btn-success:hover { transform: translateY(3px); box-shadow: 0 3px 0 #047857; }
+
+        .lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; max-height: 400px; overflow-y: auto; padding: 10px; }
+        .lib-card { background: white; border: 2px solid #e2e8f0; border-radius: 20px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s; font-weight: 700; color: #1e293b; position: relative; min-height: 120px; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+        .lib-card:hover { transform: translateY(-4px); border-color: var(--primary); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .lib-card.active { background: #f3e8ff; border-color: var(--primary); box-shadow: inset 0 0 0 2px var(--primary); }
+        .lib-actions { position: absolute; top: 10px; right: 10px; display: flex; gap: 5px; opacity: 0; transition: opacity 0.2s; }
+        .lib-card:hover .lib-actions { opacity: 1; }
+        .action-btn { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .btn-edit { background: #fef3c7; color: #d97706; }
+        .btn-delete { background: #fee2e2; color: #dc2626; }
+        .lib-card.import-trigger { border: 2px dashed var(--primary); color: var(--primary); background: transparent; }
+
+        #game-screen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            display: flex; flex-direction: column; z-index: 5;
+        }
+
+        .hud {
+            padding: 15px 30px; display: flex; justify-content: space-between; align-items: center;
+            background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); z-index: 20; color: white;
+        }
+        
+        .scoreboard { display: flex; gap: 15px; }
+        .team-score { padding: 10px 20px; border-radius: 12px; font-weight: 900; font-size: 1.2rem; border: 2px solid transparent; transition: all 0.3s; opacity: 0.5; }
+        .team-score.active { opacity: 1; transform: scale(1.1); border-color: white; box-shadow: 0 0 20px rgba(255,255,255,0.3); }
+        .ts-1 { background: var(--t1-color); }
+        .ts-2 { background: var(--t2-color); }
+        .ts-3 { background: var(--t3-color); }
+        .ts-4 { background: var(--t4-color); }
+
+        .game-area {
+            flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden;
+            max-width: 1200px; margin: 0 auto; width: 100%;
+        }
+
+        #plinko-canvas {
+            width: 100%; flex: 1; display: block;
+        }
+
+        #drop-zone-container {
+            display: flex; width: 100%; height: 70px;
+            background: #1e3a8a; border-bottom: 4px solid #0f172a;
+            z-index: 10;
+        }
+        
+        .drop-slot {
+            flex: 1; border-right: 4px solid #0f172a;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 2.5rem; font-family: 'Luckiest Guy', cursive; color: rgba(255,255,255,0.4);
+            cursor: pointer; transition: all 0.2s;
+            box-shadow: inset 0 -4px 0 rgba(0,0,0,0.2);
+            background: #1e40af;
+        }
+        
+        .drop-slot:last-child { border-right: none; }
+        
+        .drop-slot:hover { 
+            color: #facc15; background: #2563eb; 
+            transform: scale(1.02); z-index: 2; box-shadow: 0 4px 10px rgba(0,0,0,0.3); 
+        }
+
+        #boxes-row {
+            display: flex; width: 100%; height: 100px; gap: 4px; padding: 0 10px 10px 10px;
+        }
+
+        .plinko-box {
+            flex: 1; border-radius: 16px; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; font-weight: 900;
+            color: white; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center; padding: 5px; overflow: hidden;
+            box-shadow: inset 0 4px 0 rgba(255,255,255,0.2), 0 4px 10px rgba(0,0,0,0.5);
+            opacity: 1; transform: scale(1);
+        }
+        .plinko-box.removing {
+            flex: 0 0 0 !important; opacity: 0; transform: scale(0); padding: 0; margin: 0; border: none;
+        }
+
+        .box-word { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .box-free { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        
+        .box-pts { font-size: clamp(0.9rem, 2vw, 1.5rem); }
+        .box-type { font-size: clamp(0.5rem, 1vw, 0.8rem); text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 100; flex-direction: column; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .overlay.visible { opacity: 1; pointer-events: all; }
+        
+        .modal-box {
+            background: white; padding: 40px; border-radius: 32px;
+            text-align: center; max-width: 90%; width: 500px; transform: scale(0.8);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+            /* Fixed: Ensure contents are perfectly centered */
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .overlay.visible .modal-box { transform: scale(1); }
+        
+        #q-word {
+            font-size: 3rem; margin: 10px 0; color: var(--bg-dark); 
+            word-wrap: break-word; text-align: center; width: 100%;
+        }
+
+        #turn-indicator {
+            position: absolute; top: 90px; left: 50%; transform: translateX(-50%);
+            background: rgba(255,255,255,0.95); color: var(--bg-dark);
+            padding: 10px 30px; border-radius: 50px; font-weight: 900; font-size: 1.5rem;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5); z-index: 20; pointer-events: none;
+            font-family: 'Luckiest Guy', cursive; letter-spacing: 2px;
+        }
+
+        .spinner { border: 4px solid rgba(0,0,0,0.1); width: 40px; height: 40px; border-radius: 50%; border-left-color: var(--primary); animation: spin 1s linear infinite; margin-bottom: 10px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div id="loading-overlay" class="overlay visible" style="background: rgba(255,255,255,0.9); z-index: 1000;">
+        <div class="spinner"></div>
+        <div id="loading-text" style="color:var(--primary-dark); font-weight:800;">Connecting to Cloud...</div>
+    </div>
+
+    <div id="setup-screen" class="setup-container">
+        <div id="setup-step-1">
+            <h1 class="title">PLINKO</h1>
+            <div class="subtitle">Vocabulary Definition Game</div>
+
+            <div class="setup-row">
+                <div class="input-group" style="margin-bottom:0;">
+                    <label>Number of Teams</label>
+                    <select id="setup-teams">
+                        <option value="1">1 Team</option>
+                        <option value="2" selected>2 Teams</option>
+                        <option value="3">3 Teams</option>
+                        <option value="4">4 Teams</option>
+                    </select>
+                </div>
+                <div class="input-group" style="margin-bottom:0;">
+                    <label>Number of Boxes</label>
+                    <select id="setup-boxes">
+                        <option value="8">8 Boxes</option>
+                        <option value="9">9 Boxes</option>
+                        <option value="10" selected>10 Boxes (Standard)</option>
+                        <option value="11">11 Boxes</option>
+                        <option value="12">12 Boxes</option>
+                        <option value="13">13 Boxes</option>
+                        <option value="14">14 Boxes</option>
+                        <option value="16">16 Boxes (Epic)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+                <div id="current-selection-label" style="font-weight: 800; color: var(--primary-dark); margin-bottom: 10px; padding: 10px; background: #f3e8ff; border-radius: 12px;">No vocabulary list selected</div>
+                <button class="btn-secondary" onclick="goToLibraryStep()" style="margin: 0 auto;">Choose Vocabulary List</button>
+            </div>
+
+            <button class="btn-play" onclick="startGame()">DROP THE BALL!</button>
+        </div>
+
+        <div id="setup-step-2" class="hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px dashed #e2e8f0; padding-bottom: 20px;">
+                <button class="btn-secondary" onclick="backToStep1()">← Back</button>
+                <label style="font-weight:900; color:var(--primary-dark); margin:0;">Cloud Library</label>
+            </div>
+            
+            <div class="lib-grid" id="lib-grid-container"></div>
+        </div>
+    </div>
+
+    <div id="import-overlay" class="overlay">
+        <div class="modal-box">
+            <h2 style="margin-top:0; color: var(--bg-dark); width: 100%;">Save Vocabulary List</h2>
+            <textarea id="setup-import" placeholder="Word 1&#10;Word 2&#10;Word 3" style="margin-bottom: 15px; width: 100%;"></textarea>
+            <input type="text" id="library-name" placeholder="List Name (e.g. Science Vocab)" style="margin-bottom: 25px; width: 100%;">
+            <div style="display: flex; gap: 10px; width: 100%;">
+                <button class="btn-secondary" onclick="closeImportModal()" style="flex: 1;">Cancel</button>
+                <button class="btn-success" onclick="saveToLibrary()" style="flex: 1;">Save to Cloud</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Question Modal -->
+    <div id="question-overlay" class="overlay">
+        <div class="modal-box" style="border: 8px solid var(--primary);">
+            <div id="q-team-label" style="font-weight:900; color:#94a3b8; text-transform:uppercase; letter-spacing:2px;">Team 1</div>
+            <h2 id="q-word">WORD</h2>
+            <div style="font-size: 1.2rem; font-weight: 800; color: var(--primary); margin-bottom: 30px;">For <span id="q-points">0</span> Points!</div>
+            
+            <p style="font-weight: 700; color: #64748b; margin-bottom: 20px;">Did they give the correct definition?</p>
+            <div style="display: flex; gap: 15px; width: 100%; justify-content: center;">
+                <button class="btn-action" onclick="answerQuestion(false)" style="flex: 0 1 45%;">❌ INCORRECT</button>
+                <button class="btn-success" onclick="answerQuestion(true)" style="flex: 0 1 45%;">✅ CORRECT</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Free Points Modal -->
+    <div id="free-points-overlay" class="overlay">
+        <div class="modal-box" style="border: 8px solid var(--warning);">
+            <div style="font-size: 4rem; margin-bottom: 10px;">🎁</div>
+            <h2 style="font-family:'Luckiest Guy', cursive; font-size:3rem; color:var(--warning); margin:0;">FREE POINTS!</h2>
+            <p id="free-points-text" style="font-size: 1.5rem; font-weight: 800; color: var(--bg-dark); margin: 20px 0;">Team X gets +500 points!</p>
+            <button class="btn-play" onclick="claimFreePoints()" style="width: 100%;">AWESOME!</button>
+        </div>
+    </div>
+
+    <div id="game-screen" class="hidden">
+        <div class="hud">
+            <button class="btn-secondary" onclick="quitGame()" style="padding: 8px 15px; font-size: 0.9rem;">QUIT</button>
+            <div class="scoreboard" id="main-scoreboard"></div>
+        </div>
+
+        <div class="game-area">
+            <div id="turn-indicator">TEAM 1'S TURN</div>
+            
+            <!-- Distinct Top Drop Slots -->
+            <div id="drop-zone-container"></div>
+
+            <!-- Physics Canvas -->
+            <canvas id="plinko-canvas"></canvas>
+
+            <!-- Dynamic Boxes Row -->
+            <div id="boxes-row"></div>
+        </div>
+    </div>
+
+    <!-- END SCREEN -->
+    <div id="end-screen" class="overlay">
+        <div class="modal-box">
+            <div style="font-size: 5rem; margin-bottom: 10px;">🏆</div>
+            <h1 style="font-family:'Luckiest Guy', cursive; font-size: 3.5rem; color: var(--warning); margin:0; width: 100%;" id="winner-text">TEAM WINS!</h1>
+            <div id="final-scores" style="margin: 30px 0; display:flex; flex-direction:column; gap:10px; width: 100%;"></div>
+            <button class="btn-play" onclick="quitGame()" style="width: 100%;">BACK TO MENU</button>
+        </div>
+    </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, onSnapshot, doc, setDoc, deleteDoc, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const EXTERNAL_CONFIG = {
+      apiKey: "AIzaSyDHKWdQ8o_Nt2dycYPfy-KP8M05es372KY",
+        authDomain: "definition-plinko.firebaseapp.com",
+        projectId: "definition-plinko",
+        storageBucket: "definition-plinko.firebasestorage.app",
+        messagingSenderId: "946343843621",
+        appId: "1:946343843621:web:26c0c4b5f32f562d39eccc",
+        measurementId: "G-RWY8QY9S6J"
+    };
+
+    let user = null, savedLibraries = [], selectedLibId = null, editingId = null, auth, db, appId;
+
+    const gameState = { 
+        teams: 2, numBoxes: 8, scores: {}, currentTeam: 1, 
+        vocab: [], currentBoxes: [], ballDropping: false,
+        activeBoxIndex: -1, dropSlotsCount: 8
+    };
+
+    const getEl = id => document.getElementById(id);
+    const hide = id => getEl(id).classList.add('hidden');
+    const show = id => getEl(id).classList.remove('hidden');
+
+    window.getEl = getEl;
+    window.hide = hide;
+    window.show = show;
+
+    let audioCtx = null;
+    function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
+    function playTone(freq, type, duration, vol=0.1) { if (!audioCtx) return; try { const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime); gain.gain.setValueAtTime(vol, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + duration); } catch(e) {} }
+
+    window.playClickSound = () => { initAudio(); playTone(600, 'square', 0.05, 0.05); }
+    const playPegHit = () => { playTone(400 + Math.random()*200, 'triangle', 0.05, 0.03); }
+    const playBoxHit = () => { playTone(800, 'sine', 0.1, 0.1); setTimeout(()=>playTone(1200, 'sine', 0.2, 0.1), 100); }
+    const playError = () => { playTone(200, 'sawtooth', 0.3, 0.1); }
+    const playWin = () => { initAudio(); playTone(523.25, 'sine', 0.2, 0.2); setTimeout(() => playTone(659.25, 'sine', 0.2, 0.2), 150); setTimeout(() => playTone(783.99, 'sine', 0.4, 0.2), 300); }
+
+    function shuffleArray(array) { 
+        let arr = [...array];
+        for (let i = arr.length - 1; i > 0; i--) { 
+            const j = Math.floor(Math.random() * (i + 1)); 
+            [arr[i], arr[j]] = [arr[j], arr[i]]; 
+        } 
+        return arr; 
+    }
+
+    window.goToLibraryStep = () => { window.playClickSound(); hide('setup-step-1'); show('setup-step-2'); };
+    window.backToStep1 = () => { window.playClickSound(); hide('setup-step-2'); show('setup-step-1'); };
+    
+    window.openImportModal = () => { 
+        window.playClickSound(); 
+        if (!editingId) { getEl('library-name').value = ''; getEl('setup-import').value = ''; } 
+        getEl('import-overlay').classList.add('visible'); 
+    };
+    window.closeImportModal = () => { window.playClickSound(); editingId = null; getEl('import-overlay').classList.remove('visible'); };
+    
+    window.selectLibrary = (id) => { 
+        window.playClickSound(); selectedLibId = id; 
+        const found = savedLibraries.find(l => l.id === id); 
+        getEl('current-selection-label').innerText = found ? `Selected: ${found.name}` : "No list selected"; 
+        window.backToStep1(); 
+    };
+
+    window.deleteLibrary = async (id) => { 
+        window.playClickSound(); 
+        if (user && db && confirm("Delete this list?")) { 
+            try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'vocabLibraries', id)); if (selectedLibId === id) window.selectLibrary(null); } catch (e) {} 
+        } 
+    };
+    window.editLibrary = (id) => { 
+        window.playClickSound(); const lib = savedLibraries.find(l => l.id === id); if (!lib) return; 
+        editingId = id; getEl('library-name').value = lib.name; getEl('setup-import').value = lib.items.join('\n'); window.openImportModal(); 
+    };
+    
+    window.saveToLibrary = async () => { 
+        window.playClickSound(); const name = getEl('library-name').value.trim(); const content = getEl('setup-import').value.trim(); 
+        if (!name || !content || !user) return; const items = content.split('\n').map(s => s.trim()).filter(s => s.length > 0); 
+        if (items.length === 0) return; const libCol = collection(db, 'artifacts', appId, 'public', 'data', 'vocabLibraries'); 
+        try { 
+            if (editingId) { await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'vocabLibraries', editingId), { name, items, timestamp: Date.now(), userId: user.uid }); } 
+            else { await addDoc(libCol, { name, items, timestamp: Date.now(), userId: user.uid }); } 
+            window.closeImportModal(); window.backToStep1(); 
+        } catch (e) { console.error(e); } 
+    };
+
+    const renderLibraryGrid = () => {
+        const grid = getEl('lib-grid-container'); if (!grid) return; grid.innerHTML = '';
+        const importBtn = document.createElement('div'); importBtn.className = "lib-card import-trigger"; importBtn.innerText = "+ Create New List"; importBtn.onclick = window.openImportModal; grid.appendChild(importBtn);
+        
+        const sorted = [...savedLibraries].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+        sorted.forEach(lib => {
+            const card = document.createElement('div'); card.className = `lib-card ${selectedLibId === lib.id ? 'active' : ''}`;
+            card.innerHTML = `<div style="display:flex; flex-direction:column; gap: 5px;"><span>${lib.name}</span><span style="font-size: 0.75rem; color: #64748b;">${lib.items?.length || 0} words</span></div><div class="lib-actions"><div class="action-btn btn-edit" onclick="event.stopPropagation(); window.editLibrary('${lib.id}')">✏️</div><div class="action-btn btn-delete" onclick="event.stopPropagation(); window.deleteLibrary('${lib.id}')">🗑️</div></div>`;
+            card.onclick = () => window.selectLibrary(lib.id); grid.appendChild(card);
+        });
+    };
+
+    const canvas = getEl('plinko-canvas');
+    const ctx = canvas.getContext('2d');
+    let animId = null;
+    let canvasW = 0, canvasH = 0;
+    
+    const physics = {
+        pegs: [],
+        ball: null,
+        gravity: 0.4,     // Slightly smoother gravity
+        friction: 0.6,    // Bounciness dampening on walls
+        pegRadius: 6,     // Smaller peg to allow passing
+        ballRadius: 12    // Smaller ball so it fits through narrow gaps!
+    };
+
+    function resizeCanvas() {
+        const container = canvas.parentElement;
+        canvasW = container.clientWidth;
+        // Calculate remaining height above the boxes row, subtracting drop zone container
+        const dropZoneHeight = getEl('drop-zone-container').clientHeight || 70;
+        canvasH = container.clientHeight - getEl('boxes-row').clientHeight - dropZoneHeight;
+        canvas.width = canvasW;
+        canvas.height = canvasH;
+        generatePegs();
+    }
+
+    function generatePegs() {
+        physics.pegs = [];
+        // Decrease rows to make the vertical space between pins longer
+        const rows = 7; 
+        
+        // Fixed columns so the pin layout remains exactly the same regardless of box count
+        const cols = 20; 
+        const spacingX = canvasW / cols;
+        const spacingY = canvasH / (rows + 1);
+
+        for (let r = 0; r < rows; r++) {
+            // Offset alternate rows to create the interlocking hex pattern
+            const isEven = r % 2 === 0;
+            const numCols = isEven ? cols : cols + 1;
+            const startX = isEven ? spacingX/2 : 0;
+            
+            for (let c = 0; c < numCols; c++) {
+                const x = startX + c * spacingX;
+                const y = spacingY + r * spacingY;
+                // Keep pegs strictly inside the canvas walls
+                if (x > 8 && x < canvasW - 8) {
+                    physics.pegs.push({ x, y, r: physics.pegRadius });
+                }
+            }
+        }
+    }
+
+    function drawPhysics() {
+        ctx.clearRect(0, 0, canvasW, canvasH);
+        
+        // Draw Pegs
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#c084fc';
+        physics.pegs.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fill();
+        });
+        ctx.shadowBlur = 0; // Reset
+
+        // Draw Ball
+        if (physics.ball) {
+            const b = physics.ball;
+            
+            // Dynamic color based on current team
+            const teamColors = {
+                1: { fill: '#3b82f6', shadow: '#60a5fa' },
+                2: { fill: '#f43f5e', shadow: '#fb7185' },
+                3: { fill: '#10b981', shadow: '#34d399' },
+                4: { fill: '#f59e0b', shadow: '#fbbf24' }
+            };
+            const activeColor = teamColors[gameState.currentTeam] || teamColors[1];
+
+            ctx.fillStyle = activeColor.fill;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = activeColor.shadow;
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            // Inner highlight
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.beginPath();
+            ctx.arc(b.x - 3, b.y - 3, b.r/2.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    function updatePhysics() {
+        if (!physics.ball) return;
+        
+        const b = physics.ball;
+        b.vy += physics.gravity;
+        b.x += b.vx;
+        b.y += b.vy;
+
+        // Wall collisions
+        if (b.x - b.r < 0) { b.x = b.r; b.vx *= -physics.friction; }
+        if (b.x + b.r > canvasW) { b.x = canvasW - b.r; b.vx *= -physics.friction; }
+
+        // Peg Collisions (Logical, bounce-based)
+        physics.pegs.forEach(p => {
+            const dx = b.x - p.x;
+            const dy = b.y - p.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            const minDist = b.r + p.r;
+            
+            if (dist < minDist) {
+                playPegHit();
+                
+                // Resolve penetration immediately to prevent getting stuck inside peg
+                const overlap = minDist - dist;
+                const nx = dx / dist;
+                const ny = dy / dist;
+                b.x += nx * overlap;
+                b.y += ny * overlap;
+
+                // Reflect velocity with dynamic/randomized restitution (bounciness)
+                const restitution = 0.4 + (Math.random() * 0.3); // Bounce between 0.4 and 0.7
+                const dot = b.vx * nx + b.vy * ny;
+                
+                b.vx -= (1 + restitution) * dot * nx;
+                b.vy -= (1 + restitution) * dot * ny;
+
+                // Apply a balanced random nudge so it's unpredictable but still falls
+                // Force a strong nudge either left or right randomly
+                b.vx += (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 2.5 + 1.5); 
+                
+                // Slightly dampen vertical speed to prevent infinite bouncing upwards
+                b.vy *= 0.8;
+                
+                // Enforce speed limits so physics engine doesn't explode
+                b.vx = Math.max(-8, Math.min(8, b.vx));
+                b.vy = Math.max(-5, Math.min(12, b.vy)); // Cap upward speed, allow fast falling
+            }
+        });
+
+        // Bottom landing check
+        if (b.y > canvasH + b.r) {
+            handleBallLanded(b.x);
+        }
+    }
+
+    function loop() {
+        if(gameState.ballDropping) updatePhysics();
+        drawPhysics();
+        animId = requestAnimationFrame(loop);
+    }
+
+    function generateDropSlots() {
+        const container = getEl('drop-zone-container');
+        container.innerHTML = '';
+        // Drop slots remain static for the whole game round based on initial config
+        for (let i = 0; i < gameState.dropSlotsCount; i++) {
+            const slot = document.createElement('div');
+            slot.className = 'drop-slot';
+            slot.innerText = i + 1;
+            slot.onclick = () => window.triggerDrop(i);
+            container.appendChild(slot);
+        }
+    }
+
+    window.triggerDrop = (slotIndex) => {
+        if (gameState.ballDropping) return;
+        window.playClickSound();
+        gameState.ballDropping = true;
+        
+        const container = getEl('drop-zone-container');
+        const slot = container.children[slotIndex];
+        const rect = slot.getBoundingClientRect();
+        const canvasRect = canvas.getBoundingClientRect();
+        
+        // Calculate the absolute exact center of the slot relative to the canvas drawing area
+        const startX = (rect.left - canvasRect.left) + (rect.width / 2);
+        
+        physics.ball = {
+            x: startX,
+            y: physics.ballRadius + 5, // Starts just inside the canvas
+            vx: (Math.random() - 0.5) * 6.0, // Strong, unpredictable initial left/right nudge
+            vy: Math.random() * 2.0, // Slight random initial downward push
+            r: physics.ballRadius
+        };
+    };
+
+    window.startGame = () => {
+        window.playClickSound();
+        if (!selectedLibId) { 
+            getEl('current-selection-label').innerText = "❌ Please select a list!"; 
+            setTimeout(()=>window.selectLibrary(selectedLibId), 1500); return; 
+        }
+
+        const lib = savedLibraries.find(l => l.id === selectedLibId);
+        if (!lib || lib.items.length === 0) return;
+
+        gameState.teams = parseInt(getEl('setup-teams').value);
+        gameState.numBoxes = parseInt(getEl('setup-boxes').value);
+        gameState.dropSlotsCount = gameState.numBoxes; // Set initial discrete slots
+        gameState.vocab = shuffleArray(lib.items);
+        gameState.scores = {};
+        for(let i=1; i<=gameState.teams; i++) gameState.scores[i] = 0;
+        
+        gameState.currentTeam = 1;
+
+        hide('setup-screen');
+        show('game-screen');
+        
+        generateDropSlots();
+        generateBoxes();
+        updateScoreUI();
+        startTurn();
+        
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        loop();
+    };
+
+    function generateBoxes() {
+        const row = getEl('boxes-row');
+        row.innerHTML = '';
+        gameState.currentBoxes = [];
+
+        // Possible points
+        const pointsArray = [100, 200, 300, 400, 500];
+
+        for (let i = 0; i < gameState.numBoxes; i++) {
+            let isFree = Math.random() < 0.2;
+            
+            // PREVENT DUPLICATES: If we run out of unique words, force this to be a FREE box.
+            if (gameState.vocab.length === 0) {
+                isFree = true;
+            }
+            
+            const pts = pointsArray[Math.floor(Math.random() * pointsArray.length)];
+            
+            let content = "FREE";
+            if (!isFree) {
+                content = gameState.vocab.pop();
+            }
+
+            const boxObj = { id: i, type: isFree ? 'free' : 'word', points: pts, content: content };
+            gameState.currentBoxes.push(boxObj);
+
+            const div = document.createElement('div');
+            div.className = `plinko-box box-${boxObj.type}`;
+            div.id = `box-${i}`;
+            div.innerHTML = `
+                <div class="box-pts">${pts}</div>
+                <div class="box-type">${boxObj.type === 'free' ? 'FREE PTS' : 'WORD'}</div>
+            `;
+            row.appendChild(div);
+        }
+    }
+
+    function startTurn() {
+        getEl('turn-indicator').innerText = `TEAM ${gameState.currentTeam}'S TURN`;
+        getEl('turn-indicator').style.color = `var(--t${gameState.currentTeam}-color)`;
+        gameState.ballDropping = false;
+        physics.ball = null;
+    }
+
+    function updateScoreUI() {
+        const sb = getEl('main-scoreboard');
+        sb.innerHTML = '';
+        for (let i = 1; i <= gameState.teams; i++) {
+            const div = document.createElement('div');
+            div.className = `team-score ts-${i} ${gameState.currentTeam === i ? 'active' : ''}`;
+            div.innerText = `T${i}: ${gameState.scores[i]}`;
+            sb.appendChild(div);
+        }
+    }
+
+    function handleBallLanded(x) {
+        physics.ball = null; 
+        playBoxHit();
+
+        const ratio = x / canvasW;
+        let idx = Math.floor(ratio * gameState.currentBoxes.length);
+        idx = Math.max(0, Math.min(gameState.currentBoxes.length - 1, idx));
+
+        gameState.activeBoxIndex = idx;
+        const box = gameState.currentBoxes[idx];
+
+        if (box.type === 'free') {
+            getEl('free-points-text').innerText = `Team ${gameState.currentTeam} gets +${box.points} points!`;
+            getEl('free-points-overlay').classList.add('visible');
+        } else {
+            getEl('q-team-label').innerText = `Team ${gameState.currentTeam}'s Turn`;
+            getEl('q-word').innerText = box.content;
+            getEl('q-points').innerText = box.points;
+            getEl('question-overlay').classList.add('visible');
+        }
+    }
+
+    window.claimFreePoints = () => {
+        window.playClickSound();
+        const box = gameState.currentBoxes[gameState.activeBoxIndex];
+        gameState.scores[gameState.currentTeam] += box.points;
+        getEl('free-points-overlay').classList.remove('visible');
+        resolveTurn();
+    };
+
+    window.answerQuestion = (correct) => {
+        if (correct) {
+            playWin();
+            const box = gameState.currentBoxes[gameState.activeBoxIndex];
+            gameState.scores[gameState.currentTeam] += box.points;
+        } else {
+            playError();
+        }
+        getEl('question-overlay').classList.remove('visible');
+        resolveTurn();
+    };
+
+    function resolveTurn() {
+        updateScoreUI();
+
+        // Visually shrink and remove the box
+        const boxDiv = getEl(`box-${gameState.currentBoxes[gameState.activeBoxIndex].id}`);
+        boxDiv.classList.add('removing');
+        
+        gameState.currentBoxes.splice(gameState.activeBoxIndex, 1);
+
+        setTimeout(() => {
+            boxDiv.remove(); 
+            
+            if (gameState.currentBoxes.length === 0) {
+                endGame();
+            } else {
+                gameState.currentTeam = (gameState.currentTeam % gameState.teams) + 1;
+                updateScoreUI();
+                startTurn();
+            }
+        }, 500);
+    }
+
+    function endGame() {
+        let max = -1, winners = [];
+        for (let i = 1; i <= gameState.teams; i++) {
+            if (gameState.scores[i] > max) { max = gameState.scores[i]; winners = [i]; }
+            else if (gameState.scores[i] === max) winners.push(i);
+        }
+        getEl('winner-text').innerText = winners.length > 1 ? "IT'S A TIE!" : `TEAM ${winners[0]} WINS!`;
+        
+        const fs = getEl('final-scores');
+        fs.innerHTML = '';
+        for (let i = 1; i <= gameState.teams; i++) {
+            fs.innerHTML += `<div style="font-size:1.5rem; font-weight:900; color:var(--t${i}-color);">TEAM ${i}: ${gameState.scores[i]} PTS</div>`;
+        }
+        
+        playWin();
+        getEl('end-screen').classList.add('visible');
+    }
+
+    window.quitGame = () => {
+        window.playClickSound();
+        if (animId) cancelAnimationFrame(animId);
+        window.removeEventListener('resize', resizeCanvas);
+        getEl('end-screen').classList.remove('visible');
+        hide('game-screen');
+        show('setup-screen');
+    };
+
+    const initApp = async () => {
+        try {
+            let firebaseConfig = null;
+            if (typeof __firebase_config !== 'undefined' && __firebase_config) { firebaseConfig = JSON.parse(__firebase_config); } else { firebaseConfig = EXTERNAL_CONFIG; }
+            if (!firebaseConfig) throw new Error("No Config");
+
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app); db = getFirestore(app); appId = typeof __app_id !== 'undefined' ? __app_id : 'plinko-game-global';
+            
+            onAuthStateChanged(auth, (u) => { user = u; if (u) setupCloudSync(); });
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { await signInWithCustomToken(auth, __initial_auth_token); } 
+            else { await signInAnonymously(auth); }
+        } catch (e) { 
+            console.error(e); 
+            getEl('loading-text').innerText = "Offline Mode"; 
+            setTimeout(() => getEl('loading-overlay').classList.remove('visible'), 2000); 
+        }
+    };
+
+    const setupCloudSync = () => {
+        if (!user) return;
+        const libCol = collection(db, 'artifacts', appId, 'public', 'data', 'vocabLibraries');
+        onSnapshot(query(libCol), (snap) => {
+            savedLibraries = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderLibraryGrid();
+            getEl('loading-overlay').classList.remove('visible');
+        }, (err) => { console.error(err); getEl('loading-overlay').classList.remove('visible'); });
+    };
+
+    initApp();
+</script>
+</body>
+</html>
