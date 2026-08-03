@@ -621,7 +621,7 @@
 
         gameState.teams = parseInt(getEl('setup-teams').value);
         gameState.numBoxes = parseInt(getEl('setup-boxes').value);
-        gameState.dropSlotsCount = gameState.numBoxes; // Set initial discrete slots
+        gameState.dropSlotsCount = 10; // Fixed to always be 10 drop slots
         gameState.vocab = shuffleArray(lib.items);
         gameState.scores = {};
         for(let i=1; i<=gameState.teams; i++) gameState.scores[i] = 0;
